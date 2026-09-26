@@ -46,6 +46,8 @@ export type BuiltIdea = {
   buildBrief: Record<string, unknown>;
   category: string;
   market: "B2B" | "B2C" | "BOTH";
+  ideaType: "SAAS" | "APP" | "DIGITAL";
+  searchEvidence: unknown;
   difficulty: number;
   capitalBand: CapitalBand;
   opportunity: number;
@@ -227,6 +229,8 @@ export function fillIdeaTemplate(
     },
     category: "Vertical workflow",
     market: "B2B",
+    ideaType: "SAAS",
+    searchEvidence: null,
     difficulty,
     capitalBand: "low",
     opportunity: scores.opportunity,

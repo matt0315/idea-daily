@@ -9,9 +9,9 @@ export async function GET() {
     return NextResponse.json({ error: "Exports are on Builder." }, { status: 403 });
   }
   const ideas = await db.idea.findMany({ where: { status: "PUBLISHED" }, orderBy: { publishedAt: "desc" } });
-  const header = ["slug", "title", "category", "market", "opportunity", "pain", "buildability", "timing", "growth", "dataMode"];
+  const header = ["slug", "title", "ideaType", "category", "market", "opportunity", "pain", "buildability", "timing", "growth", "dataMode"];
   const lines = ideas.map((idea) =>
-    [idea.slug, csv(idea.title), csv(idea.category), idea.market, idea.opportunity, idea.pain, idea.buildability, idea.timing, idea.growth, idea.dataMode].join(","),
+    [idea.slug, csv(idea.title), idea.ideaType, csv(idea.category), idea.market, idea.opportunity, idea.pain, idea.buildability, idea.timing, idea.growth, idea.dataMode].join(","),
   );
   return new NextResponse([header.join(","), ...lines].join("\n"), {
     headers: {

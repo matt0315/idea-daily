@@ -49,6 +49,24 @@ async function loadContext(ideaId?: string, projectId?: string, reportId?: strin
     const project = await db.project.findFirst({ where: { id: projectId, userId }, include: { idea: true } });
     if (!project) return null;
     if (project.idea) return fromIdea(project.idea);
+    const alphabet = readAlphabetIdea(project.context);
+    if (alphabet) {
+      return {
+        requirements: null,
+        advisor: {
+          title: alphabet.title,
+          pitch: alphabet.summary,
+          keyword: alphabet.niche,
+          scores: alphabet.scores,
+          whyNow: `Searches people start in ${alphabet.niche}: ${alphabet.searches.join("; ")}`,
+          proof: "Autocomplete phrases are searches, not customer quotes.",
+          marketGap: "No competitor pages are attached to this Alphabet Demand draft.",
+          executionPlan: "Read the attached searches with one buyer before writing code.",
+          offerSummary: `${alphabet.productType} for ${alphabet.niche}. Price is unset.`,
+          dataMode: alphabet.dataMode,
+        },
+      };
+    }
   }
   if (ideaId) {
     const idea = await db.idea.findUnique({ where: { id: ideaId } });
@@ -75,6 +93,44 @@ async function loadContext(ideaId?: string, projectId?: string, reportId?: strin
     };
   }
   return null;
+}
+
+function readAlphabetIdea(context: unknown): {
+  title: string;
+  summary: string;
+  searches: string[];
+  niche: string;
+  productType: string;
+  dataMode: "SAMPLE" | "LIVE";
+  scores: { opportunity: number; pain: number; buildability: number; timing: number };
+} | null {
+  if (!context || typeof context !== "object") return null;
+  const alphabet = (context as { alphabetIdea?: unknown }).alphabetIdea;
+  if (!alphabet || typeof alphabet !== "object") return null;
+  const record = alphabet as {
+    title?: string;
+    summary?: string;
+    searches?: unknown;
+    niche?: string;
+    productType?: string;
+    dataMode?: string;
+    scores?: { opportunity?: number; pain?: number; buildability?: number; timing?: number };
+  };
+  if (!record.title || !record.summary || !record.niche) return null;
+  return {
+    title: record.title,
+    summary: record.summary,
+    searches: Array.isArray(record.searches) ? record.searches.filter((item): item is string => typeof item === "string") : [],
+    niche: record.niche,
+    productType: record.productType || "idea",
+    dataMode: record.dataMode === "LIVE" ? "LIVE" : "SAMPLE",
+    scores: {
+      opportunity: record.scores?.opportunity ?? 1,
+      pain: record.scores?.pain ?? 1,
+      buildability: record.scores?.buildability ?? 1,
+      timing: record.scores?.timing ?? 1,
+    },
+  };
 }
 
 function fromIdea(idea: NonNullable<Awaited<ReturnType<typeof db.idea.findUnique>>>) {

@@ -1,4 +1,6 @@
-import { Prisma, type PrismaClient } from "@prisma/client";
+import type { PrismaClient } from "@prisma/client";
+import { runAutocompleteNightly } from "../autocomplete/nightly";
+import { insertQueuedIdea } from "../autocomplete/queue";
 import { clusterSignals, selectCandidates } from "./cluster";
 import { harvestAll } from "./harvest";
 import { fillIdeaTemplate } from "./write";
@@ -9,63 +11,34 @@ export async function runDailyPipeline(db: PrismaClient): Promise<{ queued: numb
   const candidates = selectCandidates(clusters, 8);
   const ideas = candidates.map((candidate) => fillIdeaTemplate(candidate));
 
+  let queued = 0;
   for (const idea of ideas) {
-    const existing = await db.idea.findUnique({ where: { slug: idea.slug } });
-    if (existing) continue;
-    await db.idea.create({
-      data: {
-        slug: idea.slug,
-        title: idea.title,
-        summary: idea.summary,
-        status: "QUEUED",
-        dataMode: idea.dataMode,
-        tags: idea.tags as Prisma.InputJsonValue,
-        pitch: idea.pitch,
-        keyword: idea.keyword,
-        keywordVolume: idea.keywordVolume,
-        keywordGrowth: idea.keywordGrowth,
-        keywordCountry: idea.keywordCountry,
-        keywordSeries: idea.keywordSeries as Prisma.InputJsonValue,
-        keywordAsOf: idea.keywordAsOf,
-        keywordSource: idea.keywordSource,
-        scores: idea.scores as Prisma.InputJsonValue,
-        businessFit: idea.businessFit as Prisma.InputJsonValue,
-        community: idea.community as Prisma.InputJsonValue,
-        offerLadder: idea.offerLadder as Prisma.InputJsonValue,
-        whyNow: idea.whyNow,
-        proof: idea.proof,
-        marketGap: idea.marketGap,
-        executionPlan: idea.executionPlan,
-        frameworks: idea.frameworks as Prisma.InputJsonValue,
-        requirements: idea.requirements as Prisma.InputJsonValue,
-        sources: idea.sources as Prisma.InputJsonValue,
-        buildBrief: idea.buildBrief as Prisma.InputJsonValue,
-        category: idea.category,
-        market: idea.market,
-        difficulty: idea.difficulty,
-        capitalBand: idea.capitalBand,
-        opportunity: idea.opportunity,
-        pain: idea.pain,
-        buildability: idea.buildability,
-        timing: idea.timing,
-        growth: idea.growth,
-      },
-    });
+    if (await insertQueuedIdea(db, idea)) queued += 1;
+  }
+
+  let alphabet = { queued: 0, sample: true, niches: [] as string[] };
+  try {
+    alphabet = await runAutocompleteNightly(db);
+  } catch (error) {
+    alphabet = { queued: 0, sample: true, niches: [error instanceof Error ? error.message : "autocomplete failed"] };
   }
 
   const run = await db.pipelineRun.create({
     data: {
       kind: "daily-pipeline",
       status: "completed",
-      dataMode: anySample ? "SAMPLE" : "LIVE",
+      dataMode: anySample || alphabet.sample ? "SAMPLE" : "LIVE",
       log: {
         signalCount: signals.length,
         sampleSignals: signals.filter((signal) => signal.sample).length,
         clusterCount: clusters.length,
         queuedTitles: ideas.map((idea) => idea.title),
+        queued,
+        autocompleteQueued: alphabet.queued,
+        autocompleteNiches: alphabet.niches,
       },
     },
   });
 
-  return { queued: ideas.length, sample: anySample, runId: run.id };
+  return { queued: queued + alphabet.queued, sample: anySample || alphabet.sample, runId: run.id };
 }

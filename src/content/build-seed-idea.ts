@@ -1,3 +1,5 @@
+import type { IdeaTypeCode } from "../lib/autocomplete/copy";
+import type { SearchEvidence } from "../lib/autocomplete/evidence";
 import type { BuildBrief } from "../lib/build-guides";
 import type { IdeaRequirements } from "../lib/founder-fit";
 import { positionLabel } from "../lib/frameworks";
@@ -58,6 +60,8 @@ export type SeedIdeaInput = {
   requirements: IdeaRequirements;
   sources: SeedSource[];
   brief: BuildBrief;
+  ideaType?: IdeaTypeCode;
+  searchEvidence?: SearchEvidence | null;
 };
 
 const CLOCK = new Date("2026-09-26T06:00:00.000Z");
@@ -165,6 +169,8 @@ export function buildSeedIdea(input: SeedIdeaInput) {
     buildBrief: input.brief,
     category: input.category,
     market: input.market,
+    ideaType: input.ideaType ?? "SAAS",
+    searchEvidence: input.searchEvidence ?? null,
     difficulty,
     capitalBand: input.capitalBand,
     opportunity: scores.opportunity,

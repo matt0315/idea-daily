@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { BuildNav } from "@/components/build-nav";
 import { asPlan, getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { canAccess } from "@/lib/gating";
@@ -16,7 +17,8 @@ export default async function BuildPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
       <h1 className="font-serif text-5xl">Build hub</h1>
-      <p className="mt-3 text-muted">A project holds the idea, your profile, and chained skills: offer, voice, landing page, email sequence, and a 7-day ship plan. Run-all writes them in order. Export is Markdown you can drop into the build tools.</p>
+      <BuildNav current="projects" />
+      <p className="mt-3 text-muted">A project holds the idea, your profile, and chained skills: offer, voice, landing page, email sequence, and a 7-day ship plan. Run-all writes them in order. Export is Markdown you can drop into the build tools. Alphabet Demand, on the other tab, is available from Builder.</p>
       {!user ? <p className="mt-4"><Link className="font-semibold text-teal" href="/login?next=/build">Sign in</Link></p> : null}
       {user && !allowed ? <p className="mt-4 text-copper">Skills are on Pro. You can still read build guides on each idea.</p> : null}
       {user && allowed ? (

@@ -3,6 +3,7 @@ import { FRAMEWORKS } from "@/lib/frameworks";
 import { briefFromUnknown, guidesForBrief } from "@/lib/build-guides";
 import { guideAllowed, type Plan } from "@/lib/gating";
 import type { FitResult } from "@/lib/founder-fit";
+import { ideaTypeLabel } from "@/lib/autocomplete/copy";
 import { formatGrowth, formatVolume, type IdeaView } from "@/lib/idea-view";
 import { AdvisorPanel } from "./advisor-panel";
 import { BuildGuideTabs } from "./build-guides";
@@ -43,7 +44,7 @@ export function IdeaReport({
   return (
     <article className="mx-auto grid max-w-6xl gap-8 px-4 py-10 lg:grid-cols-[minmax(0,1fr)_280px]">
       <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-teal">{date} · {idea.category} · {idea.market}</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-teal">{date} · {ideaTypeLabel(idea.ideaType)} · {idea.category} · {idea.market}</p>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <h1 className="font-serif text-5xl tracking-tight">{idea.title}</h1>
           <SampleBadge mode={idea.dataMode} />
@@ -84,6 +85,41 @@ export function IdeaReport({
           <KeywordChart series={idea.keywordSeries} />
           <p className="mt-2 text-sm text-muted">{idea.keywordSource} As of {idea.keywordAsOf}. <a className="underline" href="#source-1">Source 1</a>.</p>
         </section>
+
+        {idea.searchEvidence ? (
+          <section className="mt-8 rounded-3xl border border-line bg-card p-5" id="searches">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted">What people search for</p>
+                <h2 className="font-serif text-3xl">{idea.searchEvidence.niche}</h2>
+              </div>
+              <SampleBadge mode={idea.searchEvidence.dataMode} />
+            </div>
+            <p className="mt-3 text-sm text-muted">{idea.searchEvidence.note}</p>
+            <p className="mt-1 text-sm text-muted">{idea.searchEvidence.country} · {idea.searchEvidence.language} · {idea.searchEvidence.source} · as of {idea.searchEvidence.asOf}</p>
+            {idea.searchEvidence.volume != null ? <p className="mt-2 text-sm">{idea.searchEvidence.volumeNote}</p> : null}
+            <div className="mt-4 grid gap-4 md:grid-cols-3">
+              {([
+                ["question", "Questions"],
+                ["problem", "Problems"],
+                ["desire", "Desires"],
+              ] as const).map(([kind, label]) => {
+                const lines = idea.searchEvidence!.suggestions.filter((suggestion) => suggestion.kind === kind);
+                return (
+                  <div key={kind}>
+                    <p className="text-xs uppercase tracking-wide text-muted">{label} · {lines.length}</p>
+                    <ul className="mt-2 space-y-2 text-sm">
+                      {lines.length === 0 ? <li className="text-muted">None attached.</li> : null}
+                      {lines.map((line) => (
+                        <li key={line.text} className="rounded-xl bg-paper px-3 py-2">{line.text}</li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        ) : null}
 
         <section className="mt-8 grid gap-3 sm:grid-cols-2" id="scores">
           {FACETS.map(([key, label]) => {
@@ -227,6 +263,7 @@ export function IdeaReport({
             {[
               ["#pitch", "Pitch"],
               ["#demand", "Demand"],
+              ...(idea.searchEvidence ? [["#searches", "Searches"] as const] : []),
               ["#scores", "Scores"],
               ["#fit", "Business fit"],
               ["#community", "Community"],

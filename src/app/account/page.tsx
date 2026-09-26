@@ -11,7 +11,7 @@ export default async function AccountPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login?next=/account");
   const plan = asPlan(user.plan);
-  const meters: Meter[] = ["research", "advisor", "trendResearch", "generate"];
+  const meters: Meter[] = ["research", "advisor", "trendResearch", "generate", "alphabet"];
   const usage = await Promise.all(meters.map(async (meter) => ({ meter, used: await meterUsed(user.id, meter), quota: quotaFor(plan, meter) })));
   const saved = await db.savedIdea.findMany({ where: { userId: user.id }, include: { idea: true } });
   const profile = readProfile(user.founderProfile);
@@ -25,7 +25,7 @@ export default async function AccountPage() {
       <ul className="mt-6 grid gap-2 sm:grid-cols-2">
         {usage.map((row) => (
           <li key={row.meter} className="rounded-2xl border border-line bg-card p-3 text-sm">
-            <span className="capitalize">{row.meter}</span>
+            <span>{meterLabel(row.meter)}</span>
             <span className="num float-right">{row.used}/{row.quota}</span>
           </li>
         ))}
@@ -42,4 +42,12 @@ export default async function AccountPage() {
       </form>
     </div>
   );
+}
+
+function meterLabel(meter: Meter): string {
+  if (meter === "trendResearch") return "Trend research";
+  if (meter === "alphabet") return "Alphabet Demand";
+  if (meter === "generate") return "Generator";
+  if (meter === "research") return "Idea Agent";
+  return "Advisor";
 }

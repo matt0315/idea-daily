@@ -496,6 +496,7 @@ Payments can stay where they are. The product is the list.`,
   {
     slug: "studiohold",
     title: "StudioHold",
+    ideaType: "APP",
     summary: "Deposits and a no-show rule for private music teachers.",
     daysAgo: 30,
     tags: ["Education", "Bookings", "Solo"],
@@ -648,8 +649,110 @@ It should not replace the property system. If the export is painful, the idea is
 // Fix the accidental bad channel on permitping if TypeScript complains.
 // The channel object included a publisher field. Remove it by rebuilding that entry cleanly below if needed.
 
+const photoChecklist: SeedIdeaInput = {
+  slug: "site-photo-checklist",
+  title: "Site Photo Checklist",
+  summary: "A one-page shot list a residential electrician prints before photographing a panel for a quote.",
+  daysAgo: 4,
+  ideaType: "DIGITAL",
+  tags: ["Digital product", "Trades", "Sample inputs"],
+  keyword: "electrician site photo checklist",
+  volume: 1000,
+  growthPct: 12,
+  inputs: {
+    monthlyVolume: 1000,
+    growthPct: 12,
+    competitorCount: 4,
+    painQuoteCount: 0,
+    painSeverityAvg: 3,
+    buildWeeks: 1,
+    capitalBand: "none",
+    regulatoryLoad: 0,
+    dependencyRisk: 0,
+    timingSignals: 2,
+  },
+  category: "Digital product",
+  market: "B2B",
+  capitalBand: "none",
+  revenueSymbols: "$",
+  arrLabel: "Unset until priced",
+  arrNote: "A checklist is not a subscription forecast. Price it after someone pays for the file. {{s1}}",
+  gtm: 5,
+  gtmNote: "Hand the page to one shop before you design a cover.",
+  target: "Owners of residential electrical shops who price from phone photos.",
+  competitor: "A notes app and a camera roll. Named products were not fetched for this sample record.",
+  pitch: `The quote starts with a photo that is missing the label, the breaker schedule, or the ceiling height. The owner asks for another picture, and the lead goes quiet.
+
+Site Photo Checklist is a printable shot list for that visit: panel cover on, panel cover off, the run, the existing fixture, and a coin for scale. It is a file, not a field-service suite. The shop prints it or pins it in the van.
+
+The searches shown below are sample phrases written for this record. They are not live autocomplete results and they are not customer quotes. {{s1}} Volume on the chart is the same kind of prior used when a keyword provider is absent.
+
+Sell the page by hand first. If a shop will not hand it to a technician, a longer ebook will not fix that.`,
+  channels: [
+    { platform: "Forum", name: "Electrician Talk", url: "https://www.electriciantalk.com/", note: "Public forum index. No posts were scraped.", sample: true },
+  ],
+  offerLadder: [
+    { tier: "Lead magnet", price: "Free", detail: "The six-shot version on a single card." },
+    { tier: "Frontend", price: "Set after the first sale", detail: "The full shot list plus a quote cover sheet, delivered as a PDF." },
+    { tier: "Core", price: "Set after the first sale", detail: "A small pack: shot list, allowance lines, and a follow-up text." },
+  ],
+  whyNow: "Phone photos are already how homeowners describe a panel. A checklist can ride that habit without new software. That is a production note, not a market-size claim. {{s1}}",
+  proof: "No verbatim quotes are attached. The sample searches are phrases we wrote so this page can show the evidence block. Do not cite them as Google suggestions. {{s1}}",
+  marketGap: "Scheduling apps assume the job is already sold. The gap to test is the ten minutes of photos before the number. Confirm substitutes by opening them, not from this paragraph.",
+  executionPlan: "Day 1: print the list and ride along on two quotes. Days 2–3: delete any shot the technician skipped. Day 4: sell the PDF to the shop that used it.",
+  uniqueness: 5,
+  value: 7,
+  triangle: { audience: 5, community: 5, offer: 7 },
+  frameworkNote: "A digital product sits lower on uniqueness than a workflow app. The offer is clear because the artifact is one page.",
+  requirements: {
+    skills: { tech: 1, sales: 3, design: 3, domain: 4 },
+    weeklyHours: 6,
+    capitalBand: "none",
+    risk: "low",
+    model: "b2b",
+    motion: "either",
+    industries: ["trades"],
+    mvpWeeks: 1,
+    salesIntensity: 3,
+    regulatoryLoad: 0,
+  },
+  sources: sources([
+    { id: 2, title: "Electrician Talk", url: "https://www.electriciantalk.com/", publisher: "Electrician Talk", accessed: ACCESSED, note: "Public homepage only.", sample: true },
+  ]),
+  brief: {
+    title: "Site Photo Checklist",
+    slug: "site-photo-checklist",
+    oneLiner: "A printable shot list for pricing a residential panel from photos.",
+    customer: "Owners of small residential electrical shops.",
+    problem: "Quotes wait on a second round of photos because the first set missed the panel label.",
+    mvp: ["Six required shots", "A scale note", "A quote cover line"],
+    stack: "A PDF",
+    pricing: "Set after the first shop pays.",
+    outOfScope: ["A mobile app", "A price book", "Dispatch"],
+  },
+  searchEvidence: {
+    niche: "residential electrician",
+    country: "US",
+    language: "en",
+    source: "sample",
+    dataMode: "SAMPLE",
+    asOf: ACCESSED,
+    note: "Sample phrases written for this record so the searches block has something to show. They are not Google autocomplete results.",
+    volume: null,
+    volumeNote: null,
+    suggestions: [
+      { text: "how to photograph an electrical panel for a quote", kind: "question", cluster: "panel photos" },
+      { text: "how many photos should an electrician send with a quote", kind: "question", cluster: "panel photos" },
+      { text: "electrician missing photo problem on site", kind: "problem", cluster: "missing photos" },
+      { text: "electrician quote delayed because photos were blurry", kind: "problem", cluster: "blurry photos" },
+      { text: "best electrician site photo checklist", kind: "desire", cluster: "site photo checklist" },
+      { text: "electrician panel photo checklist printable", kind: "desire", cluster: "site photo checklist" },
+    ],
+  },
+};
+
 export function seedIdeaRecords() {
-  return ideas.map((idea) => {
+  return [...ideas, photoChecklist].map((idea) => {
     const cleaned = {
       ...idea,
       channels: idea.channels.map((channel) => ({

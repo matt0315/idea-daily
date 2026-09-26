@@ -17,7 +17,8 @@ export type Feature =
   | "advisor"
   | "research"
   | "buildHub"
-  | "trends.research";
+  | "trends.research"
+  | "alphabet";
 
 const MIN_PLAN: Record<Feature, Plan> = {
   database: "BUILDER",
@@ -31,6 +32,7 @@ const MIN_PLAN: Record<Feature, Plan> = {
   research: "PRO",
   buildHub: "PRO",
   "trends.research": "BUILDER",
+  alphabet: "BUILDER",
 };
 
 export function canAccess(plan: Plan, feature: Feature): boolean {
@@ -41,13 +43,13 @@ export function requiredPlan(feature: Feature): Plan {
   return MIN_PLAN[feature];
 }
 
-export type Meter = "research" | "advisor" | "trendResearch" | "generate";
+export type Meter = "research" | "advisor" | "trendResearch" | "generate" | "alphabet";
 
-/** Monthly quotas. Research is counted per calendar month on Pro (5). */
+/** Monthly quotas. Research is counted per calendar month on Pro (5). Alphabet Demand is a mine run, not a page view. */
 export const QUOTAS: Record<Plan, Record<Meter, number>> = {
-  FREE: { research: 0, advisor: 0, trendResearch: 0, generate: 0 },
-  BUILDER: { research: 0, advisor: 20, trendResearch: 10, generate: 20 },
-  PRO: { research: 5, advisor: 150, trendResearch: 50, generate: 100 },
+  FREE: { research: 0, advisor: 0, trendResearch: 0, generate: 0, alphabet: 0 },
+  BUILDER: { research: 0, advisor: 20, trendResearch: 10, generate: 20, alphabet: 5 },
+  PRO: { research: 5, advisor: 150, trendResearch: 50, generate: 100, alphabet: 30 },
 };
 
 export function quotaFor(plan: Plan, meter: Meter): number {

@@ -1,4 +1,6 @@
 import type { Idea } from "@prisma/client";
+import { isSearchEvidence, type SearchEvidence } from "./autocomplete/evidence";
+import type { IdeaTypeCode } from "./autocomplete/copy";
 import type { IdeaRequirements } from "./founder-fit";
 
 export type Facet = { value: number; label: string; why: string; sourceIds: number[] };
@@ -63,6 +65,8 @@ export type IdeaView = {
   sources: IdeaSource[];
   category: string;
   market: string;
+  ideaType: IdeaTypeCode;
+  searchEvidence: SearchEvidence | null;
   difficulty: number;
   capitalBand: string;
   opportunity: number;
@@ -112,6 +116,8 @@ export function toIdeaView(idea: Idea): IdeaView {
     sources: arr(idea.sources),
     category: idea.category,
     market: idea.market,
+    ideaType: idea.ideaType === "APP" || idea.ideaType === "DIGITAL" ? idea.ideaType : "SAAS",
+    searchEvidence: isSearchEvidence(idea.searchEvidence) ? idea.searchEvidence : null,
     difficulty: idea.difficulty,
     capitalBand: idea.capitalBand,
     opportunity: idea.opportunity,

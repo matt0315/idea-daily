@@ -8,7 +8,7 @@ import { TREND_COUNTRIES } from "@/lib/trends";
 
 export const metadata: Metadata = { title: "Idea Agent" };
 
-export default async function ResearchPage({ searchParams }: { searchParams: Promise<{ seed?: string }> }) {
+export default async function ResearchPage({ searchParams }: { searchParams: Promise<{ seed?: string; customer?: string }> }) {
   const sp = await searchParams;
   const user = await getCurrentUser();
   const plan = asPlan(user?.plan ?? "FREE");
@@ -25,7 +25,7 @@ export default async function ResearchPage({ searchParams }: { searchParams: Pro
       {user && !allowed ? <p className="mt-4 text-copper">Research runs are on Pro ({quotaFor("PRO", "research")} per month).</p> : null}
       <form action="/api/research" method="post" className="mt-6 space-y-3 rounded-3xl border border-line bg-card p-5">
         <textarea name="description" required defaultValue={sp.seed || ""} placeholder="What is the idea?" rows={4} className="w-full rounded-xl border border-line bg-paper px-3 py-2" />
-        <input name="customer" required placeholder="Who is the customer?" className="w-full rounded-xl border border-line bg-paper px-3 py-2" />
+        <input name="customer" required defaultValue={sp.customer || ""} placeholder="Who is the customer?" className="w-full rounded-xl border border-line bg-paper px-3 py-2" />
         <select name="country" className="w-full rounded-xl border border-line bg-paper px-3 py-2">
           {TREND_COUNTRIES.map((country) => <option key={country.code} value={country.code}>{country.label}</option>)}
         </select>

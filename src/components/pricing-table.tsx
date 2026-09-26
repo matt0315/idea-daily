@@ -15,14 +15,14 @@ const TIERS = [
     name: "Builder",
     monthly: "$19",
     annual: "$149",
-    points: ["Full database, filters, and export", "Trends library and 10 research queries / month", "Insights and the idea generator (20 / month)", "Founder fit on every idea", "All build guides", "Advisor: 20 chats / month"],
+    points: ["Full database, filters, and export", "Trends library and 10 research queries / month", "Insights and the idea generator (20 / month)", "Founder fit on every idea", "All build guides", "Advisor: 20 chats / month", "Alphabet Demand: 5 mines / month"],
   },
   {
     id: "PRO",
     name: "Pro",
     monthly: "$49",
     annual: "$399",
-    points: ["Everything in Builder", "Idea Agent: 5 research runs / month", "Advisor: 150 chats / month", "Trend research: 50 queries / month", "Build hub skills, including run-all", "Generator: 100 ideas / month"],
+    points: ["Everything in Builder", "Idea Agent: 5 research runs / month", "Advisor: 150 chats / month", "Trend research: 50 queries / month", "Build hub skills, including run-all", "Generator: 100 ideas / month", "Alphabet Demand: 30 mines / month"],
   },
 ];
 

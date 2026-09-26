@@ -5,6 +5,7 @@ import { brand } from "@/lib/brand";
 import { db } from "@/lib/db";
 import { founderFit } from "@/lib/founder-fit";
 import { canAccess } from "@/lib/gating";
+import { ideaTypeLabel } from "@/lib/autocomplete/copy";
 import { formatGrowth } from "@/lib/idea-view";
 import { readProfile } from "@/lib/profile";
 import type { IdeaRequirements } from "@/lib/founder-fit";
@@ -29,11 +30,13 @@ export default async function IdeasPage({
   const score = numberOr(one(sp.score));
   const growth = numberOr(one(sp.growth));
   const sort = one(sp.sort) || "newest";
+  const ideaType = one(sp.type);
 
   const where: Prisma.IdeaWhereInput = { status: "PUBLISHED" };
   if (open && q) where.OR = [{ title: { contains: q, mode: "insensitive" } }, { summary: { contains: q, mode: "insensitive" } }, { keyword: { contains: q, mode: "insensitive" } }];
   if (open && category) where.category = category;
   if (open && (market === "B2B" || market === "B2C" || market === "BOTH")) where.market = market;
+  if (open && (ideaType === "SAAS" || ideaType === "APP" || ideaType === "DIGITAL")) where.ideaType = ideaType;
   if (open && capital) where.capitalBand = capital;
   if (open && difficulty != null) where.difficulty = { lte: difficulty };
   if (open && score != null) where.opportunity = { gte: score };
@@ -73,6 +76,12 @@ export default async function IdeasPage({
             <option value="">All categories</option>
             {categories.map((item) => <option key={item.category}>{item.category}</option>)}
           </select>
+          <select name="type" defaultValue={ideaType} className="rounded-xl border border-line bg-paper px-3 py-2">
+            <option value="">All types</option>
+            <option value="SAAS">Startup / SaaS</option>
+            <option value="APP">App</option>
+            <option value="DIGITAL">Digital product</option>
+          </select>
           <select name="market" defaultValue={market} className="rounded-xl border border-line bg-paper px-3 py-2">
             <option value="">B2B and B2C</option>
             <option>B2B</option>
@@ -106,7 +115,7 @@ export default async function IdeasPage({
           <Link key={idea.id} href={`/ideas/${idea.slug}`} className="grid gap-2 px-4 py-4 hover:bg-paper md:grid-cols-[1fr_auto]">
             <div>
               <h2 className="font-serif text-2xl">{idea.title}</h2>
-              <p className="text-sm text-muted">{idea.category} · {idea.market} · capital {idea.capitalBand}</p>
+              <p className="text-sm text-muted">{ideaTypeLabel(idea.ideaType)} · {idea.category} · {idea.market} · capital {idea.capitalBand}</p>
             </div>
             <p className="num text-sm text-muted">
               Opp {idea.opportunity} · Pain {idea.pain} · Build {idea.buildability} · Time {idea.timing} · {formatGrowth(idea.growth)}

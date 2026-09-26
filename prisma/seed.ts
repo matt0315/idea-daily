@@ -1,6 +1,10 @@
 import bcrypt from "bcryptjs";
+import { Prisma } from "@prisma/client";
 import { queuedIdea, seedIdeaRecords } from "../src/content/ideas";
 import { seedInsights, seedTrends } from "../src/content/trends";
+import { groupSuggestions } from "../src/lib/autocomplete/cluster";
+import { ideasForCluster } from "../src/lib/autocomplete/ideas";
+import { sampleSuggestionsForNiche } from "../src/lib/autocomplete/sample";
 import { db } from "../src/lib/db";
 import { briefFromUnknown } from "../src/lib/build-guides";
 import { buildResearchReport } from "../src/lib/research";
@@ -18,6 +22,9 @@ const profile = {
 };
 
 async function main() {
+  await db.autocompleteMine.deleteMany();
+  await db.autocompleteCache.deleteMany();
+  await db.autocompleteSeed.deleteMany();
   await db.advisorMessage.deleteMany();
   await db.usageLedger.deleteMany();
   await db.savedIdea.deleteMany();
@@ -46,7 +53,12 @@ async function main() {
   void admin;
 
   for (const idea of [...seedIdeaRecords(), queuedIdea]) {
-    await db.idea.create({ data: idea });
+    await db.idea.create({
+      data: {
+        ...idea,
+        searchEvidence: idea.searchEvidence ?? Prisma.JsonNull,
+      },
+    });
   }
 
   const { rows, dropped } = seedTrends();
@@ -144,13 +156,40 @@ async function main() {
     },
   });
 
+  await db.autocompleteSeed.createMany({
+    data: [
+      { niche: "residential electrician", country: "US", language: "en" },
+      { niche: "vet clinic", country: "US", language: "en" },
+      { niche: "boutique hotel", country: "AU", language: "en" },
+      { niche: "csa farm", country: "US", language: "en" },
+      { niche: "music teacher", country: "UK", language: "en" },
+      { niche: "warehouse dock", country: "CA", language: "en" },
+    ],
+  });
+  const sampleLines = sampleSuggestionsForNiche("residential electrician");
+  const groups = groupSuggestions("residential electrician", sampleLines);
+  const cluster = groups.desires[0] ?? groups.questions[0];
+  await db.autocompleteMine.create({
+    data: {
+      userId: pro.id,
+      niche: "residential electrician",
+      country: "US",
+      language: "en",
+      groups: groups as unknown as Prisma.InputJsonValue,
+      ideas: (cluster ? ideasForCluster("residential electrician", cluster, "checklist", 10) : []) as unknown as Prisma.InputJsonValue,
+      source: "sample",
+      dataMode: "SAMPLE",
+      cacheHit: false,
+    },
+  });
+
   await db.subscriber.create({ data: { email: "reader@example.com" } });
   await db.pipelineRun.create({
     data: {
       kind: "seed",
       status: "completed",
       dataMode: "SAMPLE",
-      log: { ideas: 9, trends: rows.length, droppedNoise: dropped },
+      log: { ideas: 10, trends: rows.length, droppedNoise: dropped },
     },
   });
 }

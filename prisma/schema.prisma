@@ -40,6 +40,12 @@ enum MarketType {
   BOTH
 }
 
+enum IdeaType {
+  SAAS
+  APP
+  DIGITAL
+}
+
 model User {
   id                   String          @id @default(cuid())
   email                String          @unique
@@ -63,6 +69,7 @@ model User {
   gallery              GalleryItem[]
   trendQueries         TrendQuery[]
   generated            GeneratedIdea[]
+  autocompleteMines    AutocompleteMine[]
 }
 
 model Session {
@@ -105,6 +112,8 @@ model Idea {
   buildBrief     Json
   category       String
   market         MarketType
+  ideaType       IdeaType   @default(SAAS)
+  searchEvidence Json?
   difficulty     Int
   capitalBand    String
   opportunity    Int
@@ -123,6 +132,7 @@ model Idea {
   @@index([status, publishedAt])
   @@index([category])
   @@index([market])
+  @@index([ideaType])
 }
 
 model Trend {
@@ -267,6 +277,50 @@ model Subscriber {
   id        String   @id @default(cuid())
   email     String   @unique
   createdAt DateTime @default(now())
+}
+
+model AutocompleteSeed {
+  id        String    @id @default(cuid())
+  niche     String
+  country   String    @default("US")
+  language  String    @default("en")
+  active    Boolean   @default(true)
+  lastRunAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([niche, country])
+}
+
+model AutocompleteCache {
+  id           String   @id @default(cuid())
+  niche        String
+  country      String
+  language     String
+  suggestions  Json
+  groups       Json
+  source       String
+  dataMode     DataMode @default(SAMPLE)
+  fetchedAt    DateTime @default(now())
+
+  @@unique([niche, country, language])
+}
+
+model AutocompleteMine {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  niche     String
+  country   String
+  language  String
+  groups    Json
+  ideas     Json
+  source    String
+  dataMode  DataMode @default(SAMPLE)
+  cacheHit  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
 }
 
 model PipelineRun {

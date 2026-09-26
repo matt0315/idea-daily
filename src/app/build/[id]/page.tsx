@@ -20,6 +20,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
       <p className="text-xs uppercase tracking-wide text-teal">Project</p>
       <h1 className="font-serif text-5xl">{project.title}</h1>
       {project.idea ? <p className="mt-2 text-sm"><Link className="underline" href={`/ideas/${project.idea.slug}`}>{project.idea.title}</Link></p> : null}
+      {alphabetNiche(project.context) ? <p className="mt-2 text-sm text-muted">Saved from Alphabet Demand · {alphabetNiche(project.context)}</p> : null}
       {!allowed ? <p className="mt-4 text-copper">Running skills requires Pro.</p> : null}
       <div className="mt-6 flex flex-wrap gap-2">
         {SKILLS.map((skill) => (
@@ -43,4 +44,10 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
       </div>
     </div>
   );
+}
+
+function alphabetNiche(context: unknown): string | null {
+  if (!context || typeof context !== "object") return null;
+  const niche = (context as { alphabetIdea?: { niche?: string } }).alphabetIdea?.niche;
+  return niche || null;
 }

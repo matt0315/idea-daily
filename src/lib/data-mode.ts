@@ -1,3 +1,5 @@
+import { unofficialAutocompleteEnabled } from "./autocomplete/fetch";
+
 /** True when the deployment should label figures as sample data. */
 export function isSampleMode(): boolean {
   const flag = process.env.IDEADAILY_DATA_MODE;
@@ -20,6 +22,7 @@ export function integrationStatus() {
     inngest: Boolean(process.env.INNGEST_EVENT_KEY),
     hackerNews: true,
     appleRss: true,
+    unofficialAutocomplete: unofficialAutocompleteEnabled(),
     sampleMode: isSampleMode(),
   };
 }

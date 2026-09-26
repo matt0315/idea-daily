@@ -58,7 +58,7 @@ On Neon or Supabase, enable the `vector` extension before `prisma db push`. The 
 |---|---|
 | `npm run dev` | Next.js dev server |
 | `npm run build` / `npm start` | Production build and server |
-| `npm test` | Vitest: scoring, gating, founder fit, clustering, noise filter, guides, research verdict |
+| `npm test` | Vitest: scoring, gating, founder fit, clustering, autocomplete expansion, noise filter, guides, research verdict |
 | `npm run db:setup` | `prisma db push` and seed |
 
 ## Environment variables
@@ -77,7 +77,9 @@ Leave a key empty to use the sample fallback. The UI shows a **Sample data** bad
 | `GEMINI_API_KEY` / `GEMINI_MODEL` | Google AI | Same |
 | `PRODUCTHUNT_TOKEN` | Product Hunt GraphQL | Nightly signal harvest |
 | `YOUTUBE_API_KEY` | YouTube Data API v3 | Nightly signal harvest |
-| `DATAFORSEO_LOGIN` / `DATAFORSEO_PASSWORD` | DataForSEO | Search volume and trend research |
+| `DATAFORSEO_LOGIN` / `DATAFORSEO_PASSWORD` | DataForSEO | Search volume, trend research, and Google Autocomplete (SERP API, one task per live call) |
+| `AUTOCOMPLETE_SEEDS_PER_NIGHT` | This app | How many admin seed niches Alphabet Demand mines inside the nightly pipeline. Default 3 |
+| `ALLOW_UNOFFICIAL_AUTOCOMPLETE` | Unofficial suggest endpoint | Must be the string `true` to call `suggestqueries.google.com`. Default off. See the note below |
 | `TAVILY_API_KEY` | Tavily | Web search for competitors and community URLs |
 | `BRAVE_SEARCH_API_KEY` | Brave Search | Alternate web search |
 | `EXA_API_KEY` | Exa | Alternate web search |
@@ -97,13 +99,23 @@ Hacker News (Algolia) and Apple’s public RSS app charts need no key. If the re
 
 There is no Reddit API client. A Reddit URL can appear only when a search API returns it.
 
+### Alphabet Demand and autocomplete terms
+
+Alphabet Demand expands a niche into 40 queries (a–z, 0–9, and the prefixes how, why, best, can), groups the returned phrases into questions, problems, and desires, and drafts ideas from a cluster you pick.
+
+The preferred source is DataForSEO’s [Google Autocomplete live endpoint](https://docs.dataforseo.com/v3/serp/google/autocomplete/live/advanced/). Each live call holds one task. Their pricing page lists live mode at about **$0.002 per request** (about **$0.08** for a 40-query mine, before any volume lookup). That figure is their published example, not an invoice. Confirm it on your account. Volume enrichment, when it runs, reuses the existing Google Ads volume call and only for United States mines.
+
+`ALLOW_UNOFFICIAL_AUTOCOMPLETE` defaults to off. Set it to `true` only if you accept the risk: the public suggest URL is not a licensed API for this product, and calling it can conflict with Google’s terms. If DataForSEO credentials are present, they are used even when the flag is on. With no key and the flag off, mines show labelled **sample** phrases. Those phrases are templates, not captured searches.
+
+Results are cached per niche, country, and language for seven days. A cache hit still counts as a Builder or Pro mine. Opening a saved mine does not. Countries: United States, Australia, United Kingdom, Canada. Languages: English, Spanish, French, German. Sample phrases stay in English and are labelled as stand-ins.
+
 ### Pricing in the product
 
 | Plan | Monthly | Annual | Includes |
 |---|---|---|---|
 | Free | $0 | $0 | Public idea pages (they stay up), daily email, Cursor guide, trend and insight teasers |
-| Builder | $19 | $149 | Database, filters, CSV export, full trends, insights, generator (20/mo), founder fit, all build guides, advisor (20/mo), trend research (10/mo) |
-| Pro | $49 | $399 | Builder, plus Idea Agent (5/mo), advisor (150/mo), trend research (50/mo), generator (100/mo), build-hub skills |
+| Builder | $19 | $149 | Database, filters, CSV export, full trends, insights, generator (20/mo), founder fit, all build guides, advisor (20/mo), trend research (10/mo), Alphabet Demand (5 mines/mo) |
+| Pro | $49 | $399 | Builder, plus Idea Agent (5/mo), advisor (150/mo), trend research (50/mo), generator (100/mo), build-hub skills, Alphabet Demand (30 mines/mo) |
 
 Without `STRIPE_SECRET_KEY`, the pricing page offers a **demo upgrade** that changes the plan in the database and does not charge a card.
 
@@ -112,6 +124,7 @@ Without `STRIPE_SECRET_KEY`, the pricing page offers a **demo upgrade** that cha
 These are the figures from the planning research, not a live invoice. Treat estimates as estimates.
 
 - DataForSEO Google Ads search volume: about **$0.06 per task (standard)** or **$0.09 (live)**. A task can batch keywords. Third-party pricing page, not re-verified here.
+- DataForSEO Google Autocomplete, live mode: about **$0.002 per request**, and each live call is one keyword. A 40-query Alphabet Demand pass is about **$0.08** before volume lookups. Published on their autocomplete pricing page, not an invoice.
 - Drafting one idea record in a backfill: about **$0.10–$1** in model + data calls. Estimate.
 - One Idea Agent run with live search: about **$0.50–$3**. Estimate.
 - One trends-research query: a few cents. Estimate.
@@ -125,13 +138,13 @@ Two schedulers call the same functions:
 
 - **Inngest** (`src/inngest/functions.ts`), served at `/api/inngest`.
   - 21:30 UTC: refresh the trends library.
-  - 22:00 UTC: harvest signals, cluster them, score candidates, and queue idea drafts. 22:00 UTC is 06:00 in Perth.
+  - 22:00 UTC: harvest signals, cluster them, score candidates, and queue idea drafts. The same job mines a few Alphabet Demand seed niches and queues up to two ideas per niche. 22:00 UTC is 06:00 in Perth.
   - 22:05 UTC: publish the oldest **approved** idea and email subscribers.
 - **Vercel Cron** (`vercel.json`) hits `/api/cron/trends` and `/api/cron/daily`. Set `CRON_SECRET`. Vercel sends `Authorization: Bearer <CRON_SECRET>`.
 
 Nothing goes live from the harvester alone. A person approves or rejects drafts at `/admin`, then publish sends the Resend email. If `RESEND_API_KEY` is empty, the send is skipped and logged on the pipeline run.
 
-Signal sources, in order: Hacker News Algolia, Product Hunt, YouTube, Apple RSS charts, DataForSEO volumes, and one web-search query. Each adapter falls back to sample signals when its key is missing or the call fails.
+Signal sources, in order: Hacker News Algolia, Product Hunt, YouTube, Apple RSS charts, DataForSEO volumes, and one web-search query. Each adapter falls back to sample signals when its key is missing or the call fails. Alphabet Demand is a separate source in that same job: admin-editable seed niches, autocomplete phrases stored on the idea as “What people search for”, and an idea type of Startup / SaaS, App, or Digital product. The database filter uses that type. The nightly pass queues one idea for each of the two largest clusters, not the ten drafts the Build hub can write for a cluster you pick.
 
 ## Pages
 
@@ -145,7 +158,8 @@ Signal sources, in order: Hacker News Algolia, Product Hunt, YouTube, Apple RSS 
 | `/generate` | Profile-aware drafts |
 | `/fit` | Onboarding quiz and per-idea fit |
 | `/research` | Idea Agent |
-| `/build` | Project skills and Markdown export |
+| `/build` | Project skills and Markdown export. Pro for skills |
+| `/build/alphabet` | Alphabet Demand. Builder and Pro, metered |
 | `/built-with/[tool]` | Guides’ gallery and submissions |
 | `/pricing`, `/account`, `/admin`, `/methodology` | Billing, usage, review queue, score definitions |
 

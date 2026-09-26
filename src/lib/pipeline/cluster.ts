@@ -1,5 +1,5 @@
 export type Signal = {
-  source: "hackernews" | "producthunt" | "youtube" | "apple_rss" | "dataforseo" | "web_search";
+  source: "hackernews" | "producthunt" | "youtube" | "apple_rss" | "dataforseo" | "web_search" | "autocomplete";
   title: string;
   url: string;
   text: string;
