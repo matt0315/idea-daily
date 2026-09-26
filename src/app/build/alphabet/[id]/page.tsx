@@ -6,6 +6,7 @@ import { asGroups, readDrafts } from "@/lib/autocomplete/mine";
 import { PRODUCT_TYPES } from "@/lib/autocomplete/ideas";
 import { asPlan, getCurrentUser } from "@/lib/auth";
 import { BuildNav } from "@/components/build-nav";
+import { CommunityNotice } from "@/components/community-notice";
 import { SampleBadge } from "@/components/sample-badge";
 import { db } from "@/lib/db";
 import { canAccess } from "@/lib/gating";
@@ -37,6 +38,7 @@ export default async function AlphabetMinePage({ params }: { params: Promise<{ i
       </div>
       <p className="mt-2 text-sm text-muted">{mine.country} · {mine.language} · {mine.source}{mine.cacheHit ? " · served from the 7-day cache" : ""}</p>
       {mine.dataMode === "SAMPLE" ? <p className="mt-2 max-w-2xl text-sm text-amber-950">These phrases are sample stand-ins. They were not returned by an autocomplete provider.</p> : null}
+      <CommunityNotice />
       {!allowed ? <p className="mt-3 text-sm text-copper">This mine is saved. New mines need Builder.</p> : null}
 
       <form action={`/api/build/alphabet/${mine.id}/ideas`} method="post" className="mt-6 space-y-4">

@@ -4,6 +4,7 @@ import { asPlan, getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { canAccess, quotaFor } from "@/lib/gating";
 import { meterUsed } from "@/lib/usage";
+import { CommunityNotice } from "@/components/community-notice";
 import { TREND_COUNTRIES } from "@/lib/trends";
 
 export const metadata: Metadata = { title: "Trends research" };
@@ -18,7 +19,8 @@ export default async function TrendResearchPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
       <h1 className="font-serif text-5xl">Trends research</h1>
-      <p className="mt-3 text-muted">Enter a seed term and a country. Related phrases are ranked by commercial intent. Volume stays blank until a keyword provider is connected, and the page says so.</p>
+      <p className="mt-3 text-muted">Enter a seed term and a country. Related phrases are ranked by commercial intent. Volume stays blank until a keyword provider is connected, and the page says so. A seed already researched in that country inside the cache window is free.</p>
+      <CommunityNotice />
       {!user ? <p className="mt-4"><Link className="font-semibold text-teal" href="/login">Sign in</Link></p> : null}
       {user && !allowed ? <p className="mt-4 text-copper">This query is metered on Builder ({quotaFor("BUILDER", "trendResearch")}/month) and Pro ({quotaFor("PRO", "trendResearch")}/month).</p> : null}
       {user && allowed ? <p className="mt-4 text-sm text-muted">{used} of {quotaFor(plan, "trendResearch")} used this month.</p> : null}

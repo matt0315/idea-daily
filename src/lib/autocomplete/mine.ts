@@ -5,9 +5,9 @@ import { expandSeedQueries } from "./expand";
 import { fetchAutocompleteSuggestions } from "./fetch";
 import { ideasForCluster, isMinedDraft, productById, readDrafts, type MinedDraft } from "./ideas";
 import { completeText, llmConfigured } from "../llm";
+import { isCacheFresh } from "../community/policy";
+import { releaseDelayDays } from "../community/settings";
 import { normalizeCountry, normalizeLanguage, normalizeNiche } from "./markets";
-
-const CACHE_MS = 7 * 24 * 60 * 60 * 1000;
 
 export type MinePayload = {
   niche: string;
@@ -52,16 +52,30 @@ export async function enrichClusterVolumes(groups: GroupedSuggestions, country: 
   };
 }
 
+export async function sharedMineIsFresh(db: PrismaClient, input: { niche: string; country: string; language: string }): Promise<boolean> {
+  const niche = normalizeNiche(input.niche);
+  const country = normalizeCountry(input.country);
+  const language = normalizeLanguage(input.language);
+  if (niche.length < 2) return false;
+  const cached = await db.autocompleteCache.findUnique({
+    where: { niche_country_language: { niche, country, language } },
+  });
+  if (!cached) return false;
+  const windowDays = await releaseDelayDays(db);
+  return isCacheFresh(cached.fetchedAt, new Date(), windowDays);
+}
+
 export async function mineNiche(db: PrismaClient, input: { niche: string; country: string; language: string }): Promise<MinePayload> {
   const niche = normalizeNiche(input.niche);
   const country = normalizeCountry(input.country);
   const language = normalizeLanguage(input.language);
   if (niche.length < 2) throw new Error("niche_short");
 
+  const windowDays = await releaseDelayDays(db);
   const cached = await db.autocompleteCache.findUnique({
     where: { niche_country_language: { niche, country, language } },
   });
-  if (cached && Date.now() - cached.fetchedAt.getTime() < CACHE_MS) {
+  if (cached && isCacheFresh(cached.fetchedAt, new Date(), windowDays)) {
     return {
       niche,
       country,
@@ -71,8 +85,8 @@ export async function mineNiche(db: PrismaClient, input: { niche: string; countr
       source: cached.source,
       dataMode: cached.dataMode,
       note: cached.dataMode === "SAMPLE"
-        ? "Cached sample phrases. They are not live autocomplete results."
-        : "Cached suggestions from the last successful fetch. Cache lasts seven days.",
+        ? "Cached sample phrases shared across accounts. They are not live autocomplete results, and this view did not use a mine credit."
+        : "Cached suggestions shared across accounts. This view did not call the provider again and did not use a mine credit.",
       cacheHit: true,
     };
   }
@@ -88,6 +102,7 @@ export async function mineNiche(db: PrismaClient, input: { niche: string; countr
     groups: groups as unknown as Prisma.InputJsonValue,
     source: fetched.source,
     dataMode: fetched.dataMode,
+    drafts: {},
     fetchedAt: new Date(),
   };
   await db.autocompleteCache.upsert({

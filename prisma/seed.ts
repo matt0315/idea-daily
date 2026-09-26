@@ -23,6 +23,9 @@ const profile = {
 
 async function main() {
   await db.autocompleteMine.deleteMany();
+  await db.researchCache.deleteMany();
+  await db.trendCache.deleteMany();
+  await db.appSetting.deleteMany();
   await db.autocompleteCache.deleteMany();
   await db.autocompleteSeed.deleteMany();
   await db.advisorMessage.deleteMany();

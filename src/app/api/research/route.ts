@@ -1,9 +1,11 @@
 import { asPlan, getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { canAccess } from "@/lib/gating";
+import { canAccess, canConsume } from "@/lib/gating";
 import { redirectTo } from "@/lib/http";
+import { isCacheFresh, meterCost, sharedCacheKey } from "@/lib/community/policy";
+import { releaseDelayDays } from "@/lib/community/settings";
 import { executeResearch } from "@/lib/research-job";
-import { consumeMeter } from "@/lib/usage";
+import { consumeMeter, meterUsed } from "@/lib/usage";
 
 export async function POST(request: Request) {
   const user = await getCurrentUser();
@@ -16,8 +18,16 @@ export async function POST(request: Request) {
   const country = String(form.get("country") || "US");
   const url = String(form.get("url") || "").trim();
   if (description.length < 8 || customer.length < 2) return redirectTo(request, "/research");
-  const gate = await consumeMeter(user.id, plan, "research");
-  if (!gate.ok) return redirectTo(request, "/research?quota=1");
+  const cacheKey = sharedCacheKey([description, country]);
+  const cached = await db.researchCache.findUnique({ where: { cacheKey } });
+  const windowDays = await releaseDelayDays(db);
+  const fresh = Boolean(cached && isCacheFresh(cached.fetchedAt, new Date(), windowDays));
+  if (meterCost(fresh) === 1) {
+    const used = await meterUsed(user.id, "research");
+    if (!canConsume(plan, "research", used)) return redirectTo(request, "/research?quota=1");
+    const gate = await consumeMeter(user.id, plan, "research");
+    if (!gate.ok) return redirectTo(request, "/research?quota=1");
+  }
   const created = await db.researchReport.create({
     data: {
       userId: user.id,

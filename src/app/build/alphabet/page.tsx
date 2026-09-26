@@ -4,6 +4,7 @@ import { alphabetDemand } from "@/lib/autocomplete/copy";
 import { AUTOCOMPLETE_LANGUAGES, AUTOCOMPLETE_MARKETS } from "@/lib/autocomplete/markets";
 import { asPlan, getCurrentUser } from "@/lib/auth";
 import { BuildNav } from "@/components/build-nav";
+import { CommunityNotice } from "@/components/community-notice";
 import { db } from "@/lib/db";
 import { canAccess, quotaFor, remaining } from "@/lib/gating";
 import { meterUsed } from "@/lib/usage";
@@ -28,7 +29,8 @@ export default async function AlphabetPage({
       <h1 className="font-serif text-5xl">Build hub</h1>
       <BuildNav current="alphabet" />
       <h2 className="mt-6 font-serif text-4xl">{alphabetDemand.name}</h2>
-      <p className="mt-3 text-muted">{alphabetDemand.blurb} A cached niche does not call the provider again for seven days, and it still counts as one mine. Opening a saved mine does not.</p>
+      <p className="mt-3 text-muted">{alphabetDemand.blurb} If anyone has already mined the same niche, country, and language inside the cache window, those stored phrases are reused and the mine is free. Opening a saved mine does not use a credit either.</p>
+      <CommunityNotice />
       {user && allowed ? <p className="mt-3 text-sm">{used} of {quotaFor(plan, "alphabet")} mines used this month. {left} left.</p> : null}
       {!user ? <p className="mt-4"><Link className="font-semibold text-teal" href="/login?next=/build/alphabet">Sign in</Link></p> : null}
       {user && !allowed ? <p className="mt-4 text-copper">Alphabet Demand starts on Builder. Free accounts can still open public idea pages.</p> : null}

@@ -1,3 +1,4 @@
+import { releaseCommunityWork } from "@/lib/community/release";
 import { db } from "@/lib/db";
 import { publishNextApproved } from "@/lib/publish";
 import { runDailyPipeline } from "@/lib/pipeline/run";
@@ -23,10 +24,16 @@ export const nightlyTrends = inngest.createFunction(
   async () => refreshTrends(db),
 );
 
+export const communityRelease = inngest.createFunction(
+  { id: "community-release" },
+  { cron: "15 22 * * *" },
+  async () => releaseCommunityWork(db),
+);
+
 export const researchRun = inngest.createFunction(
   { id: "research-run" },
   { event: "app/research.requested" },
   async ({ event }) => executeResearch(String((event.data as { reportId?: string }).reportId || "")),
 );
 
-export const functions = [dailyPipeline, publishApproved, nightlyTrends, researchRun];
+export const functions = [dailyPipeline, publishApproved, nightlyTrends, communityRelease, researchRun];

@@ -93,7 +93,7 @@ Leave a key empty to use the sample fallback. The UI shows a **Sample data** bad
 | `RESEND_API_KEY` | Resend | Daily idea email |
 | `EMAIL_FROM` | Resend sender | Must be a verified domain |
 | `INNGEST_EVENT_KEY` / `INNGEST_SIGNING_KEY` | Inngest | Scheduled jobs |
-| `CRON_SECRET` | Vercel Cron | Bearer token for `/api/cron/daily` and `/api/cron/trends` |
+| `CRON_SECRET` | Vercel Cron | Bearer token for `/api/cron/daily`, `/api/cron/trends`, and `/api/cron/release` |
 
 Hacker News (Algolia) and Apple’s public RSS app charts need no key. If the request fails, the harvester uses sample signals and marks them sample.
 
@@ -107,7 +107,9 @@ The preferred source is DataForSEO’s [Google Autocomplete live endpoint](https
 
 `ALLOW_UNOFFICIAL_AUTOCOMPLETE` defaults to off. Set it to `true` only if you accept the risk: the public suggest URL is not a licensed API for this product, and calling it can conflict with Google’s terms. If DataForSEO credentials are present, they are used even when the flag is on. With no key and the flag off, mines show labelled **sample** phrases. Those phrases are templates, not captured searches.
 
-Results are cached per niche, country, and language for seven days. A cache hit still counts as a Builder or Pro mine. Opening a saved mine does not. Countries: United States, Australia, United Kingdom, Canada. Languages: English, Spanish, French, German. Sample phrases stay in English and are labelled as stand-ins.
+Results are cached per niche, country, and language for the community-release window (default seven days, editable at `/admin`). A cache hit is free: it does not call DataForSEO or a model, and it does not spend a monthly credit. The same rule applies to Idea Agent runs (same description and country) and trends research (same seed and country). Opening a saved mine does not use a credit either. Countries: United States, Australia, United Kingdom, Canada. Languages: English, Spanish, French, German. Sample phrases stay in English and are labelled as stand-ins.
+
+After that window, a scheduled job copies due mines, Idea Agent runs, and trends research into the admin queue. The public copy is tagged `community mine` and dated with the original run. It drops the user id, name, email, project titles, and founder profile. The same niche and cluster, or a highly similar title, merges new phrases into the existing idea instead of inserting a duplicate. Embeddings are used when the `vector` column is populated; otherwise matching is lexical. Pro accounts can opt out on `/account` before a run is released. Builder and Free cannot. The delay lives in `AppSetting` under `communityReleaseDays`.
 
 ### Pricing in the product
 
@@ -140,7 +142,8 @@ Two schedulers call the same functions:
   - 21:30 UTC: refresh the trends library.
   - 22:00 UTC: harvest signals, cluster them, score candidates, and queue idea drafts. The same job mines a few Alphabet Demand seed niches and queues up to two ideas per niche. 22:00 UTC is 06:00 in Perth.
   - 22:05 UTC: publish the oldest **approved** idea and email subscribers.
-- **Vercel Cron** (`vercel.json`) hits `/api/cron/trends` and `/api/cron/daily`. Set `CRON_SECRET`. Vercel sends `Authorization: Bearer <CRON_SECRET>`.
+  - 22:15 UTC: release community mines, Idea Agent runs, and trends research whose private window has elapsed.
+- **Vercel Cron** (`vercel.json`) hits `/api/cron/trends`, `/api/cron/daily`, and `/api/cron/release`. Set `CRON_SECRET`. Vercel sends `Authorization: Bearer <CRON_SECRET>`.
 
 Nothing goes live from the harvester alone. A person approves or rejects drafts at `/admin`, then publish sends the Resend email. If `RESEND_API_KEY` is empty, the send is skipped and logged on the pipeline run.
 
@@ -161,7 +164,7 @@ Signal sources, in order: Hacker News Algolia, Product Hunt, YouTube, Apple RSS 
 | `/build` | Project skills and Markdown export. Pro for skills |
 | `/build/alphabet` | Alphabet Demand. Builder and Pro, metered |
 | `/built-with/[tool]` | Guides’ gallery and submissions |
-| `/pricing`, `/account`, `/admin`, `/methodology` | Billing, usage, review queue, score definitions |
+| `/pricing`, `/account`, `/admin`, `/methodology`, `/privacy` | Billing, usage, review queue, score definitions, community-release terms |
 
 Build-guide tools: Claude Code (`CLAUDE.md` and a zip), Cursor (`.cursor/rules`), Google AI Studio, Lovable, Bolt, Replit, v0, ChatGPT/Codex.
 

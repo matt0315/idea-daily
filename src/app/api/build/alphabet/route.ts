@@ -2,7 +2,8 @@ import { asPlan, getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { canAccess, canConsume } from "@/lib/gating";
 import { redirectTo } from "@/lib/http";
-import { mineNiche } from "@/lib/autocomplete/mine";
+import { mineNiche, sharedMineIsFresh } from "@/lib/autocomplete/mine";
+import { meterCost } from "@/lib/community/policy";
 import { meterUsed, consumeMeter } from "@/lib/usage";
 import { Prisma } from "@prisma/client";
 
@@ -17,17 +18,21 @@ export async function POST(request: Request) {
   const niche = String(form.get("niche") || "");
   const country = String(form.get("country") || "US");
   const language = String(form.get("language") || "en");
-  const used = await meterUsed(user.id, "alphabet");
-  if (!canConsume(plan, "alphabet", used)) return redirectTo(request, "/build/alphabet?error=quota");
-
+  const fresh = await sharedMineIsFresh(db, { niche, country, language });
+  if (!fresh) {
+    const used = await meterUsed(user.id, "alphabet");
+    if (!canConsume(plan, "alphabet", used)) return redirectTo(request, "/build/alphabet?error=quota");
+  }
   let mined;
   try {
     mined = await mineNiche(db, { niche, country, language });
   } catch {
     return redirectTo(request, "/build/alphabet?error=niche");
   }
-  const gate = await consumeMeter(user.id, plan, "alphabet");
-  if (!gate.ok) return redirectTo(request, "/build/alphabet?error=quota");
+  if (meterCost(mined.cacheHit) === 1) {
+    const gate = await consumeMeter(user.id, plan, "alphabet");
+    if (!gate.ok) return redirectTo(request, "/build/alphabet?error=quota");
+  }
 
   const mine = await db.autocompleteMine.create({
     data: {

@@ -77,6 +77,7 @@ export function Footer() {
         <p>{brand.name} — {brand.tagline}</p>
         <div className="flex gap-4">
           <Link href="/methodology">Methodology</Link>
+          <Link href="/privacy">Privacy</Link>
           <Link href="/built-with">Built with</Link>
           <Link href="/pricing">Pricing</Link>
           <Link href="/fit">Founder fit</Link>

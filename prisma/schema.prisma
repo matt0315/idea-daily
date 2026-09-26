@@ -58,6 +58,7 @@ model User {
   founderProfile       Json?
   emailOptIn           Boolean         @default(true)
   isAdmin              Boolean         @default(false)
+  communityReleaseOptOut Boolean       @default(false)
   createdAt            DateTime        @default(now())
   updatedAt            DateTime        @updatedAt
   sessions             Session[]
@@ -181,8 +182,11 @@ model ResearchReport {
   confidence Int?
   dataMode   DataMode @default(SAMPLE)
   projectId  String?
+  releasedAt DateTime?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+
+  @@index([releasedAt, createdAt])
 }
 
 model Project {
@@ -259,9 +263,12 @@ model TrendQuery {
   user      User?    @relation(fields: [userId], references: [id])
   seed      String
   country   String
-  result    Json
-  dataMode  DataMode @default(SAMPLE)
-  createdAt DateTime @default(now())
+  result     Json
+  dataMode   DataMode  @default(SAMPLE)
+  releasedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([releasedAt, createdAt])
 }
 
 model GeneratedIdea {
@@ -301,6 +308,7 @@ model AutocompleteCache {
   groups       Json
   source       String
   dataMode     DataMode @default(SAMPLE)
+  drafts       Json     @default("{}")
   fetchedAt    DateTime @default(now())
 
   @@unique([niche, country, language])
@@ -317,10 +325,37 @@ model AutocompleteMine {
   ideas     Json
   source    String
   dataMode  DataMode @default(SAMPLE)
-  cacheHit  Boolean  @default(false)
-  createdAt DateTime @default(now())
+  cacheHit   Boolean   @default(false)
+  releasedAt DateTime?
+  createdAt  DateTime  @default(now())
 
   @@index([userId, createdAt])
+  @@index([releasedAt, createdAt])
+}
+
+model AppSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+model ResearchCache {
+  id           String   @id @default(cuid())
+  cacheKey     String   @unique
+  country      String
+  competitors  Json
+  dataMode     DataMode @default(SAMPLE)
+  fetchedAt    DateTime @default(now())
+}
+
+model TrendCache {
+  id        String   @id @default(cuid())
+  cacheKey  String   @unique
+  seed      String
+  country   String
+  result    Json
+  dataMode  DataMode @default(SAMPLE)
+  fetchedAt DateTime @default(now())
 }
 
 model PipelineRun {

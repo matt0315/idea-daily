@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { AUTOCOMPLETE_LANGUAGES, AUTOCOMPLETE_MARKETS } from "@/lib/autocomplete/markets";
+import { releaseDelayDays } from "@/lib/community/settings";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { integrationStatus } from "@/lib/data-mode";
@@ -12,6 +13,7 @@ export default async function AdminPage() {
   const pendingGallery = await db.galleryItem.findMany({ where: { status: "pending" }, include: { idea: true } });
   const runs = await db.pipelineRun.findMany({ orderBy: { createdAt: "desc" }, take: 6 });
   const seeds = await db.autocompleteSeed.findMany({ orderBy: { niche: "asc" } });
+  const releaseDays = await releaseDelayDays(db);
   const status = integrationStatus();
 
   return (
@@ -21,10 +23,17 @@ export default async function AdminPage() {
       <form action="/api/admin/pipeline" method="post" className="mt-4 flex flex-wrap gap-2">
         <button name="kind" value="daily" className="rounded-full bg-ink px-4 py-2 text-sm text-paper" type="submit">Run idea pipeline</button>
         <button name="kind" value="autocomplete" className="rounded-full border border-line px-4 py-2 text-sm" type="submit">Run search mining only</button>
+        <button name="kind" value="release" className="rounded-full border border-line px-4 py-2 text-sm" type="submit">Release due community mines</button>
         <button name="kind" value="trends" className="rounded-full border border-line px-4 py-2 text-sm" type="submit">Refresh trends</button>
         <button name="kind" value="publish" className="rounded-full border border-line px-4 py-2 text-sm" type="submit">Publish next approved</button>
       </form>
       <pre className="mt-4 overflow-auto rounded-2xl bg-card p-3 text-xs">{JSON.stringify(status, null, 2)}</pre>
+      <h2 className="mt-8 font-serif text-3xl">Community release delay</h2>
+      <p className="mt-1 text-sm text-muted">Private mines, Idea Agent runs, and trends research become anonymised queue candidates after this many days. The same number is the shared-cache window. Default is 7. Cache hits do not spend quota.</p>
+      <form action="/api/admin/settings" method="post" className="mt-3 flex flex-wrap items-center gap-2">
+        <input name="days" type="number" min={1} max={90} defaultValue={releaseDays} className="w-24 rounded-full border border-line px-3 py-2" />
+        <button className="rounded-full bg-ink px-4 py-2 text-sm text-paper" type="submit">Save delay</button>
+      </form>
       <h2 className="mt-8 font-serif text-3xl">Alphabet Demand seeds</h2>
       <p className="mt-1 text-sm text-muted">Each night rotates the oldest active niches. Never-run niches go first. Default is three per night.</p>
       <form action="/api/admin/seeds" method="post" className="mt-3 flex flex-wrap gap-2">

@@ -30,6 +30,17 @@ export default async function AccountPage() {
           </li>
         ))}
       </ul>
+      <h2 className="mt-8 font-serif text-3xl">Community release</h2>
+      <p className="mt-2 text-sm text-muted">Alphabet Demand, Idea Agent, and trends research stay on this account, then may be anonymised into the public review queue. The delay is set by an admin. <Link className="underline" href="/privacy">Read the privacy note</Link>.</p>
+      {plan === "PRO" ? (
+        <form action="/api/account/community" method="post" className="mt-3 rounded-2xl border border-line bg-card p-4 text-sm">
+          <input type="hidden" name="optOut" value={user.communityReleaseOptOut ? "no" : "yes"} />
+          <p>{user.communityReleaseOptOut ? "Public release is off for your future runs." : "Public release is on. Runs that are already in the queue stay there."}</p>
+          <button className="mt-3 rounded-full border border-line px-3 py-1.5" type="submit">{user.communityReleaseOptOut ? "Allow anonymised public release" : "Opt out of public release"}</button>
+        </form>
+      ) : (
+        <p className="mt-2 text-sm">Opt-out is a Pro control. Builder and Free runs can still be anonymised after the delay.</p>
+      )}
       <h2 className="mt-8 font-serif text-3xl">Saved ideas</h2>
       <ul className="mt-2 space-y-1">
         {saved.map((row) => <li key={row.ideaId}><Link className="underline" href={`/ideas/${row.idea.slug}`}>{row.idea.title}</Link></li>)}

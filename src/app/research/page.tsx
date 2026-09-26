@@ -4,6 +4,7 @@ import { asPlan, getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { canAccess, quotaFor } from "@/lib/gating";
 import { meterUsed } from "@/lib/usage";
+import { CommunityNotice } from "@/components/community-notice";
 import { TREND_COUNTRIES } from "@/lib/trends";
 
 export const metadata: Metadata = { title: "Idea Agent" };
@@ -19,7 +20,8 @@ export default async function ResearchPage({ searchParams }: { searchParams: Pro
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
       <h1 className="font-serif text-5xl">Idea Agent</h1>
-      <p className="mt-3 text-muted">Submit your own idea. The report covers demand, competitors, customer language, market sizing, and a Build, Test-first, or Pass verdict. Every figure is footnoted. Without a keyword provider, volume is left blank instead of invented.</p>
+      <p className="mt-3 text-muted">Submit your own idea. The report covers demand, competitors, customer language, market sizing, and a Build, Test-first, or Pass verdict. Every figure is footnoted. Without a keyword provider, volume is left blank instead of invented. The same description and country, if researched recently, is reused from the shared cache and does not use a research credit.</p>
+      <CommunityNotice />
       {user && allowed ? <p className="mt-3 text-sm">{used} of {quotaFor(plan, "research")} runs this month.</p> : null}
       {!user ? <p className="mt-4"><Link className="font-semibold text-teal" href="/login?next=/research">Sign in</Link></p> : null}
       {user && !allowed ? <p className="mt-4 text-copper">Research runs are on Pro ({quotaFor("PRO", "research")} per month).</p> : null}

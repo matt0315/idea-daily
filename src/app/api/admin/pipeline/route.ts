@@ -1,6 +1,7 @@
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirectTo } from "@/lib/http";
+import { releaseCommunityWork } from "@/lib/community/release";
 import { runAutocompleteNightly } from "@/lib/autocomplete/nightly";
 import { runDailyPipeline } from "@/lib/pipeline/run";
 import { refreshTrends } from "@/lib/pipeline/trends-job";
@@ -13,6 +14,7 @@ export async function POST(request: Request) {
   const kind = String(form.get("kind") || "");
   if (kind === "daily") await runDailyPipeline(db);
   if (kind === "autocomplete") await runAutocompleteNightly(db);
+  if (kind === "release") await releaseCommunityWork(db);
   if (kind === "trends") await refreshTrends(db);
   if (kind === "publish") await publishNextApproved();
   return redirectTo(request, "/admin");
