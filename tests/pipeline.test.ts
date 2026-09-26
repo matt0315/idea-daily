@@ -5,6 +5,7 @@ import { fillIdeaTemplate } from "../src/lib/pipeline/write";
 import { positionLabel } from "../src/lib/frameworks";
 import { guidesForBrief } from "../src/lib/build-guides";
 import { runSkill } from "../src/lib/skills";
+import { advise } from "../src/lib/advisor";
 import { buildResearchReport } from "../src/lib/research";
 import { commercialIntent, filterTrendNoise, growthFromMonthlySeries, selectTrendCards } from "../src/lib/trends";
 
@@ -129,6 +130,26 @@ describe("research report", () => {
     expect(report.pains[0].sample).toBe(true);
     expect(report.sources.length).toBeGreaterThan(0);
     expect(report.pivots).toHaveLength(3);
+  });
+});
+
+describe("advisor copy", () => {
+  it("does not leave footnote markers in the answer", () => {
+    const answer = advise("roast", "", {
+      title: "QuoteLatch",
+      pitch: "A quoting desk. {{s1}}",
+      keyword: "electrician quote software",
+      scores: { opportunity: 7, pain: 7, buildability: 7, timing: 7 },
+      whyNow: "Deposits are easy. {{s3}}",
+      proof: "No verbatim quotes yet. {{s1}}",
+      marketGap: "The gap is the ten minutes before the price. {{s1}}",
+      executionPlan: "Day 1: write the price lines.",
+      offerSummary: "Free checklist, then a manual quote.",
+      dataMode: "SAMPLE",
+    });
+    expect(answer.content).not.toContain("{{s");
+    expect(answer.content).toContain("Build");
+    expect(answer.content.toLowerCase()).toContain("sample");
   });
 });
 
