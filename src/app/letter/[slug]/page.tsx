@@ -46,6 +46,8 @@ export default async function LetterPage({ params }: { params: Promise<{ slug: s
         <Link className="underline" href="/account">Email preferences</Link>
         {" · "}
         {brand.address}
+        {" · "}
+        <a className="underline" href={brand.website}>{brand.website}</a>
       </p>
     </article>
   );

@@ -32,7 +32,10 @@ describe("daily letter", () => {
     expect(letter.problems.length).toBeGreaterThanOrEqual(1);
     expect(letter.problems.length).toBeLessThanOrEqual(2);
     expect(letter.frameworkName).toBe(brand.focusName);
-    expect(letter.senderName).toBe(brand.senderName);
+    expect(brand.senderName).toBe("Matt Smith");
+    expect(brand.address).toBe("Botland Studio");
+    expect(brand.website).toBe("https://botland.studio");
+    expect(letter.senderName).toBe("Matt Smith");
     expect(letter.ps).toMatch(/Founder Fit/);
     expect(`${letter.opener} ${letter.takeaway} ${letter.frameworkIntro}`).not.toMatch(/1-1-1-1|vibe island/i);
     const html = renderLetterHtml(letter, {
@@ -52,7 +55,8 @@ describe("daily letter", () => {
     expect(at(brand.senderName)).toBeGreaterThan(at("/ideas/quotelatch"));
     expect(at("Founder Fit")).toBeGreaterThan(at(brand.senderName));
     expect(at("https://example.com/unsub?token=abc")).toBeGreaterThan(at("Founder Fit"));
-    expect(at(brand.address)).toBeGreaterThan(at("https://example.com/unsub?token=abc"));
+    expect(at("Botland Studio")).toBeGreaterThan(at("https://example.com/unsub?token=abc"));
+    expect(at('href="https://botland.studio"')).toBeGreaterThan(at("Botland Studio"));
     expect(html).toContain("QuoteLatch &lt;script&gt;");
     expect(html).not.toContain("QuoteLatch <script>");
   });

@@ -269,7 +269,7 @@ export function renderLetterHtml(
             <p class="muted" style="margin:28px 0 0;font-family:Arial,sans-serif;font-size:12px;line-height:1.5;color:#5c564c;">
               <a href="${escapeHtml(options.unsubscribeUrl)}">Unsubscribe</a>
               · <a href="${escapeHtml(options.preferencesUrl)}">Email preferences</a><br>
-              ${escapeHtml(brand.address)}
+              ${escapeHtml(brand.address)} · <a href="${escapeHtml(brand.website)}">${escapeHtml(brand.website)}</a>
             </p>
           </td>
         </tr>

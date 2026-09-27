@@ -9,10 +9,14 @@ export const brand = {
     "One sourced startup idea each day, a filterable archive, trend cards, and build guides that carry the brief into the tool you already use.",
   methodologyPath: "/methodology",
   supportEmail: "hello@example.com",
-  /** Named sign-off on the daily letter. Replace this before a public send. */
-  senderName: "Sam Ellis",
-  /** Postal line in the letter footer. Replace this with the real business address. */
-  address: "IdeaDaily, 1 Letter Street, Example City, EX 10001",
+  /** Named sign-off on the daily letter. */
+  senderName: "Matt Smith",
+  /**
+   * Studio name in the letter footer.
+   * A postal address can be added later if needed for US CAN-SPAM.
+   */
+  address: "Botland Studio",
+  website: "https://botland.studio",
   /** Four-check pick-and-ship list. Rename the framework here. */
   focusName: "Focus Four",
 } as const;
