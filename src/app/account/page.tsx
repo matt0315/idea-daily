@@ -30,6 +30,12 @@ export default async function AccountPage() {
           </li>
         ))}
       </ul>
+      <h2 className="mt-8 font-serif text-3xl">Daily letter</h2>
+      <form action="/api/account/email" method="post" className="mt-2 text-sm">
+        <input type="hidden" name="optIn" value={user.emailOptIn ? "no" : "yes"} />
+        <p>{user.emailOptIn ? "This address receives the daily letter." : "This address is unsubscribed."}</p>
+        <button className="mt-2 rounded-full border border-line px-3 py-1.5" type="submit">{user.emailOptIn ? "Unsubscribe" : "Subscribe again"}</button>
+      </form>
       <h2 className="mt-8 font-serif text-3xl">Community release</h2>
       <p className="mt-2 text-sm text-muted">Alphabet Demand, Idea Agent, and trends research stay on this account, then may be anonymised into the public review queue. The delay is set by an admin. <Link className="underline" href="/privacy">Read the privacy note</Link>.</p>
       {plan === "PRO" ? (

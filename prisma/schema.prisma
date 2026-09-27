@@ -59,6 +59,7 @@ model User {
   emailOptIn           Boolean         @default(true)
   isAdmin              Boolean         @default(false)
   communityReleaseOptOut Boolean       @default(false)
+  emailToken           String?
   createdAt            DateTime        @default(now())
   updatedAt            DateTime        @updatedAt
   sessions             Session[]
@@ -71,6 +72,9 @@ model User {
   trendQueries         TrendQuery[]
   generated            GeneratedIdea[]
   autocompleteMines    AutocompleteMine[]
+  focusDrafts          FocusDraft[]
+
+  @@index([emailToken])
 }
 
 model Session {
@@ -122,6 +126,9 @@ model Idea {
   buildability   Int
   timing         Int
   growth         Float
+  focusScore     Int        @default(0)
+  focusVerdict   String     @default("needs-work")
+  focusChecklist Json?
   embedding      Unsupported("vector(1536)")?
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
@@ -129,11 +136,13 @@ model Idea {
   projects       Project[]
   savedBy        SavedIdea[]
   chats          AdvisorMessage[]
+  letters        NewsletterIssue[]
 
   @@index([status, publishedAt])
   @@index([category])
   @@index([market])
   @@index([ideaType])
+  @@index([focusScore])
 }
 
 model Trend {
@@ -281,9 +290,41 @@ model GeneratedIdea {
 }
 
 model Subscriber {
+  id             String    @id @default(cuid())
+  email          String    @unique
+  token          String?
+  unsubscribedAt DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@index([token])
+}
+
+model NewsletterIssue {
   id        String   @id @default(cuid())
-  email     String   @unique
+  slug      String   @unique
+  ideaId    String?
+  idea      Idea?    @relation(fields: [ideaId], references: [id], onDelete: SetNull)
+  subject   String
+  content   Json
+  dataMode  DataMode @default(SAMPLE)
   createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model FocusDraft {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title      String
+  facts      Json
+  checklist  Json
+  score      Int
+  dataMode   DataMode @default(SAMPLE)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId, updatedAt])
 }
 
 model AutocompleteSeed {

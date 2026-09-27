@@ -6,6 +6,10 @@ import { groupSuggestions } from "../src/lib/autocomplete/cluster";
 import { ideasForCluster } from "../src/lib/autocomplete/ideas";
 import { sampleSuggestionsForNiche } from "../src/lib/autocomplete/sample";
 import { db } from "../src/lib/db";
+import { newEmailToken } from "../src/lib/email-token";
+import { checklistForSlug } from "../src/lib/focus-samples";
+import { readFocusChecklist } from "../src/lib/focus";
+import { templateLetter } from "../src/lib/letter";
 import { briefFromUnknown } from "../src/lib/build-guides";
 import { buildResearchReport } from "../src/lib/research";
 import { runSkill } from "../src/lib/skills";
@@ -22,6 +26,8 @@ const profile = {
 };
 
 async function main() {
+  await db.newsletterIssue.deleteMany();
+  await db.focusDraft.deleteMany();
   await db.autocompleteMine.deleteMany();
   await db.researchCache.deleteMany();
   await db.trendCache.deleteMany();
@@ -46,20 +52,46 @@ async function main() {
 
   const passwordHash = await bcrypt.hash("demo1234", 10);
   const [free, builder, pro, admin] = await Promise.all([
-    db.user.create({ data: { email: "free@ideadaily.dev", name: "Free Demo", passwordHash, plan: "FREE" } }),
-    db.user.create({ data: { email: "builder@ideadaily.dev", name: "Builder Demo", passwordHash, plan: "BUILDER", billingInterval: "MONTHLY", founderProfile: profile } }),
-    db.user.create({ data: { email: "pro@ideadaily.dev", name: "Pro Demo", passwordHash, plan: "PRO", billingInterval: "ANNUAL", founderProfile: profile } }),
-    db.user.create({ data: { email: "admin@ideadaily.dev", name: "Admin Demo", passwordHash, plan: "PRO", isAdmin: true, founderProfile: profile } }),
+    db.user.create({ data: { email: "free@ideadaily.dev", name: "Free Demo", passwordHash, plan: "FREE", emailToken: newEmailToken() } }),
+    db.user.create({ data: { email: "builder@ideadaily.dev", name: "Builder Demo", passwordHash, plan: "BUILDER", billingInterval: "MONTHLY", founderProfile: profile, emailToken: newEmailToken() } }),
+    db.user.create({ data: { email: "pro@ideadaily.dev", name: "Pro Demo", passwordHash, plan: "PRO", billingInterval: "ANNUAL", founderProfile: profile, emailToken: newEmailToken() } }),
+    db.user.create({ data: { email: "admin@ideadaily.dev", name: "Admin Demo", passwordHash, plan: "PRO", isAdmin: true, founderProfile: profile, emailToken: newEmailToken() } }),
   ]);
   void free;
   void builder;
   void admin;
 
   for (const idea of [...seedIdeaRecords(), queuedIdea]) {
+    const checklist = checklistForSlug(idea.slug);
     await db.idea.create({
       data: {
         ...idea,
         searchEvidence: idea.searchEvidence ?? Prisma.JsonNull,
+        focusScore: checklist.passedCount,
+        focusVerdict: checklist.verdict,
+        focusChecklist: checklist as unknown as Prisma.InputJsonValue,
+      },
+    });
+  }
+
+  const published = await db.idea.findMany({ where: { status: "PUBLISHED" } });
+  for (const idea of published) {
+    const checklist = readFocusChecklist(idea.focusChecklist) ?? checklistForSlug(idea.slug);
+    const content = templateLetter({
+      title: idea.title,
+      slug: idea.slug,
+      summary: idea.summary,
+      checklist,
+      publishedAt: idea.publishedAt ?? undefined,
+    });
+    const day = (idea.publishedAt ?? new Date()).toISOString().slice(0, 10);
+    await db.newsletterIssue.create({
+      data: {
+        slug: `${day}-${idea.slug}`,
+        ideaId: idea.id,
+        subject: content.subject,
+        content: content as unknown as Prisma.InputJsonValue,
+        dataMode: "SAMPLE",
       },
     });
   }
@@ -186,7 +218,7 @@ async function main() {
     },
   });
 
-  await db.subscriber.create({ data: { email: "reader@example.com" } });
+  await db.subscriber.create({ data: { email: "reader@example.com", token: newEmailToken() } });
   await db.pipelineRun.create({
     data: {
       kind: "seed",

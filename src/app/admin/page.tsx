@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AUTOCOMPLETE_LANGUAGES, AUTOCOMPLETE_MARKETS } from "@/lib/autocomplete/markets";
 import { releaseDelayDays } from "@/lib/community/settings";
@@ -19,7 +20,7 @@ export default async function AdminPage() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
       <h1 className="font-serif text-5xl">Review queue</h1>
-      <p className="mt-2 text-sm text-muted">The nightly job queues candidates, including a few Alphabet Demand drafts from the seed list. Nothing publishes until you approve it. Publish sends the daily email when Resend is configured.</p>
+      <p className="mt-2 text-sm text-muted">The nightly job queues candidates, including a few Alphabet Demand drafts from the seed list. Nothing publishes until you approve it. Publish writes the daily letter and sends it when Resend is configured. <Link className="underline" href="/admin/letter">Preview the letter</Link>.</p>
       <form action="/api/admin/pipeline" method="post" className="mt-4 flex flex-wrap gap-2">
         <button name="kind" value="daily" className="rounded-full bg-ink px-4 py-2 text-sm text-paper" type="submit">Run idea pipeline</button>
         <button name="kind" value="autocomplete" className="rounded-full border border-line px-4 py-2 text-sm" type="submit">Run search mining only</button>

@@ -9,6 +9,7 @@ import { AdvisorPanel } from "./advisor-panel";
 import { BuildGuideTabs } from "./build-guides";
 import { KeywordChart } from "./keyword-chart";
 import { RichText, SourceList } from "./rich-text";
+import { FocusPanel } from "./focus-panel";
 import { SampleBadge } from "./sample-badge";
 
 const FACETS = [
@@ -59,6 +60,8 @@ export function IdeaReport({
           <RichText text={idea.pitch} sources={idea.sources} />
           <p className="mt-4 text-sm text-muted">Scores and revenue sketches are educational. Sample figures are not measurements. Read the footnotes before you repeat a number.</p>
         </section>
+
+        <FocusPanel checklist={idea.focus} id="focus-four" />
 
         <section className="mt-10 rounded-3xl border border-line bg-card p-5 shadow-card" id="demand">
           <div className="flex flex-wrap items-start justify-between gap-3">

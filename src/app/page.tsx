@@ -4,7 +4,8 @@ import { brand } from "@/lib/brand";
 import { db } from "@/lib/db";
 import { formatGrowth, formatVolume, toIdeaView } from "@/lib/idea-view";
 
-export default async function HomePage() {
+export default async function HomePage({ searchParams }: { searchParams: Promise<{ subscribed?: string }> }) {
+  const sp = await searchParams;
   const latest = await db.idea.findFirst({ where: { status: "PUBLISHED" }, orderBy: { publishedAt: "desc" } });
   const more = await db.idea.findMany({ where: { status: "PUBLISHED" }, orderBy: { publishedAt: "desc" }, take: 6, skip: latest ? 1 : 0 });
   const trends = await db.trend.findMany({ where: { country: "US", commercial: true }, orderBy: { growthPct: "desc" }, take: 4 });
@@ -44,9 +45,11 @@ export default async function HomePage() {
       )}
 
       <form action="/api/subscribe" method="post" className="mt-8 flex flex-wrap gap-2">
-        <input name="email" type="email" required placeholder="Email for the daily idea" className="min-w-64 flex-1 rounded-full border border-line bg-card px-4 py-2" />
+        <input name="email" type="email" required placeholder="Email for the daily letter" className="min-w-64 flex-1 rounded-full border border-line bg-card px-4 py-2" />
         <button className="rounded-full bg-ink px-4 py-2 text-sm text-paper" type="submit">Send it</button>
       </form>
+      {sp.subscribed ? <p className="mt-2 text-sm text-teal">You are on the list. Unsubscribe any time from the letter footer.</p> : null}
+      <p className="mt-2 text-sm"><Link className="underline" href="/letter">Read past letters</Link></p>
 
       <section className="mt-14">
         <div className="flex items-end justify-between">

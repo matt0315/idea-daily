@@ -90,7 +90,7 @@ Leave a key empty to use the sample fallback. The UI shows a **Sample data** bad
 | `STRIPE_PRICE_BUILDER_ANNUAL` | Stripe Price id | Builder $149/yr |
 | `STRIPE_PRICE_PRO_MONTHLY` | Stripe Price id | Pro $49/mo |
 | `STRIPE_PRICE_PRO_ANNUAL` | Stripe Price id | Pro $399/yr |
-| `RESEND_API_KEY` | Resend | Daily idea email |
+| `RESEND_API_KEY` | Resend | Daily letter. Empty key keeps preview and the archive, and skips the send |
 | `EMAIL_FROM` | Resend sender | Must be a verified domain |
 | `INNGEST_EVENT_KEY` / `INNGEST_SIGNING_KEY` | Inngest | Scheduled jobs |
 | `CRON_SECRET` | Vercel Cron | Bearer token for `/api/cron/daily`, `/api/cron/trends`, and `/api/cron/release` |
@@ -131,6 +131,16 @@ These are the figures from the planning research, not a live invoice. Treat esti
 - One Idea Agent run with live search: about **$0.50–$3**. Estimate.
 - One trends-research query: a few cents. Estimate.
 - Running cost at a small MVP: about **$100–$300 per month** for model calls, DataForSEO, search, hosting, and email. Estimate. It moves with Idea Agent usage.
+
+## Daily letter
+
+Publishing an approved idea writes one letter and, when `RESEND_API_KEY` is set, sends it. Recipients are users with email opt-in, plus addresses from the homepage signup. Unsubscribe in the footer sets `emailOptIn` off or stamps `unsubscribedAt`. The same letter is public at `/letter`.
+
+The letter is a plain note, in this order: a short opener, one or two problems, the Focus Four questions, today’s idea scored item by item, a takeaway, one button, a sign-off from `brand.senderName`, a PS toward Founder Fit for readers who have no profile, then unsubscribe, preferences, and `brand.address`. With an LLM key, the prose can be rewritten from that idea. Without one, a fixed template is used and the letter says so. `/admin/letter` previews light and dark. “Send test to me” does not send when Resend is unset.
+
+## Focus Four
+
+`brand.focusName` (default Focus Four) is four yes-or-no checks: one customer, one offer, one funnel, one channel. Pass means all four have evidence. Anything else is needs-work, and the failed checks are flagged. The deterministic scorer is what the tests lock. A model may rescore a founder’s own idea when a key exists; otherwise the result is badged sample. Seeded ideas ship with sample checklists. The database can filter pass / needs-work and sort by the 0–4 score. Founder Fit lets a signed-in person score up to four of their own ideas side by side and see which one to hold for 90 days.
 - YouTube Data API and Hacker News Algolia have free tiers. Confirm the current YouTube quota in Google Cloud before a backfill.
 - Stripe, Resend, Inngest, Neon, and Vercel each have a free or low starter tier. Check their current pricing before you turn live keys on.
 
@@ -141,11 +151,11 @@ Two schedulers call the same functions:
 - **Inngest** (`src/inngest/functions.ts`), served at `/api/inngest`.
   - 21:30 UTC: refresh the trends library.
   - 22:00 UTC: harvest signals, cluster them, score candidates, and queue idea drafts. The same job mines a few Alphabet Demand seed niches and queues up to two ideas per niche. 22:00 UTC is 06:00 in Perth.
-  - 22:05 UTC: publish the oldest **approved** idea and email subscribers.
+  - 22:05 UTC: publish the oldest **approved** idea, write that day’s letter, and email subscribers when Resend is set.
   - 22:15 UTC: release community mines, Idea Agent runs, and trends research whose private window has elapsed.
 - **Vercel Cron** (`vercel.json`) hits `/api/cron/trends`, `/api/cron/daily`, and `/api/cron/release`. Set `CRON_SECRET`. Vercel sends `Authorization: Bearer <CRON_SECRET>`.
 
-Nothing goes live from the harvester alone. A person approves or rejects drafts at `/admin`, then publish sends the Resend email. If `RESEND_API_KEY` is empty, the send is skipped and logged on the pipeline run.
+Nothing goes live from the harvester alone. A person approves or rejects drafts at `/admin`, then publish writes the letter and sends it with Resend. If `RESEND_API_KEY` is empty, the send is skipped and logged on the pipeline run. The archive still gets the issue.
 
 Signal sources, in order: Hacker News Algolia, Product Hunt, YouTube, Apple RSS charts, DataForSEO volumes, and one web-search query. Each adapter falls back to sample signals when its key is missing or the call fails. Alphabet Demand is a separate source in that same job: admin-editable seed niches, autocomplete phrases stored on the idea as “What people search for”, and an idea type of Startup / SaaS, App, or Digital product. The database filter uses that type. The nightly pass queues one idea for each of the two largest clusters, not the ten drafts the Build hub can write for a cluster you pick.
 
@@ -159,12 +169,13 @@ Signal sources, in order: Hacker News Algolia, Product Hunt, YouTube, Apple RSS 
 | `/trends`, `/trends/research` | Library, plus metered seed-term research |
 | `/insights` | Persona, pains, phrases |
 | `/generate` | Profile-aware drafts |
-| `/fit` | Onboarding quiz and per-idea fit |
+| `/fit` | Onboarding quiz, per-idea fit, and a Focus Four comparison of your own ideas |
+| `/letter`, `/letter/[slug]` | Public archive of the daily letter |
 | `/research` | Idea Agent |
 | `/build` | Project skills and Markdown export. Pro for skills |
 | `/build/alphabet` | Alphabet Demand. Builder and Pro, metered |
 | `/built-with/[tool]` | Guides’ gallery and submissions |
-| `/pricing`, `/account`, `/admin`, `/methodology`, `/privacy` | Billing, usage, review queue, score definitions, community-release terms |
+| `/pricing`, `/account`, `/admin`, `/admin/letter`, `/methodology`, `/privacy` | Billing, usage, review queue, letter preview, score definitions, community-release terms |
 
 Build-guide tools: Claude Code (`CLAUDE.md` and a zip), Cursor (`.cursor/rules`), Google AI Studio, Lovable, Bolt, Replit, v0, ChatGPT/Codex.
 
@@ -188,4 +199,4 @@ Do not ship the demo password. Change or delete the seeded users before a public
 npm test
 ```
 
-Covers the score formula, plan gates and quotas, founder-fit weights, signal clustering, the trend noise filter, guide files, and the research verdict.
+Covers the score formula, plan gates and quotas, founder-fit weights, Focus Four checks, daily-letter HTML order, signal clustering, the trend noise filter, guide files, and the research verdict.

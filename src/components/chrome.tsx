@@ -81,6 +81,7 @@ export function Footer() {
           <Link href="/built-with">Built with</Link>
           <Link href="/pricing">Pricing</Link>
           <Link href="/fit">Founder fit</Link>
+          <Link href="/letter">Letter</Link>
         </div>
       </div>
     </footer>

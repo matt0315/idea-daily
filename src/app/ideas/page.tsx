@@ -31,6 +31,8 @@ export default async function IdeasPage({
   const growth = numberOr(one(sp.growth));
   const sort = one(sp.sort) || "newest";
   const ideaType = one(sp.type);
+  const focus = one(sp.focus);
+  const focusScore = numberOr(one(sp.focusScore));
 
   const where: Prisma.IdeaWhereInput = { status: "PUBLISHED" };
   if (open && q) where.OR = [{ title: { contains: q, mode: "insensitive" } }, { summary: { contains: q, mode: "insensitive" } }, { keyword: { contains: q, mode: "insensitive" } }];
@@ -41,9 +43,12 @@ export default async function IdeasPage({
   if (open && difficulty != null) where.difficulty = { lte: difficulty };
   if (open && score != null) where.opportunity = { gte: score };
   if (open && growth != null) where.growth = { gte: growth };
+  if (open && focus === "pass") where.focusVerdict = "pass";
+  if (open && focus === "needs") where.focusVerdict = "needs-work";
+  if (open && focusScore != null) where.focusScore = { gte: focusScore };
 
   const orderBy: Prisma.IdeaOrderByWithRelationInput =
-    sort === "opportunity" ? { opportunity: "desc" } : sort === "pain" ? { pain: "desc" } : sort === "buildability" ? { buildability: "desc" } : sort === "timing" ? { timing: "desc" } : sort === "growth" ? { growth: "desc" } : { publishedAt: "desc" };
+    sort === "opportunity" ? { opportunity: "desc" } : sort === "pain" ? { pain: "desc" } : sort === "buildability" ? { buildability: "desc" } : sort === "timing" ? { timing: "desc" } : sort === "growth" ? { growth: "desc" } : sort === "focus" ? { focusScore: "desc" } : { publishedAt: "desc" };
 
   const ideas = await db.idea.findMany({
     where: open ? where : { status: "PUBLISHED" },
@@ -98,6 +103,12 @@ export default async function IdeasPage({
           <input name="difficulty" defaultValue={one(sp.difficulty)} placeholder="Max difficulty 1–10" className="rounded-xl border border-line bg-paper px-3 py-2" />
           <input name="score" defaultValue={one(sp.score)} placeholder="Min opportunity" className="rounded-xl border border-line bg-paper px-3 py-2" />
           <input name="growth" defaultValue={one(sp.growth)} placeholder="Min growth %" className="rounded-xl border border-line bg-paper px-3 py-2" />
+          <select name="focus" defaultValue={focus} className="rounded-xl border border-line bg-paper px-3 py-2">
+            <option value="">Any {brand.focusName}</option>
+            <option value="pass">Pass</option>
+            <option value="needs">Needs work</option>
+          </select>
+          <input name="focusScore" defaultValue={one(sp.focusScore)} placeholder="Min checklist score 0–4" className="rounded-xl border border-line bg-paper px-3 py-2" />
           <select name="sort" defaultValue={sort} className="rounded-xl border border-line bg-paper px-3 py-2">
             <option value="newest">Newest</option>
             <option value="opportunity">Opportunity</option>
@@ -105,6 +116,7 @@ export default async function IdeasPage({
             <option value="buildability">Buildability</option>
             <option value="timing">Timing</option>
             <option value="growth">Growth</option>
+            <option value="focus">{brand.focusName} score</option>
             <option value="fit">Best for me</option>
           </select>
           <button className="rounded-full bg-ink px-4 py-2 text-sm text-paper" type="submit">Apply</button>
@@ -118,7 +130,7 @@ export default async function IdeasPage({
               <p className="text-sm text-muted">{ideaTypeLabel(idea.ideaType)} · {idea.category} · {idea.market} · capital {idea.capitalBand}</p>
             </div>
             <p className="num text-sm text-muted">
-              Opp {idea.opportunity} · Pain {idea.pain} · Build {idea.buildability} · Time {idea.timing} · {formatGrowth(idea.growth)}
+              Opp {idea.opportunity} · Pain {idea.pain} · Build {idea.buildability} · Time {idea.timing} · {brand.focusName} {idea.focusScore}/4 · {formatGrowth(idea.growth)}
               {idea.fit != null ? ` · Fit ${idea.fit}%` : ""}
             </p>
           </Link>

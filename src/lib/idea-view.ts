@@ -2,6 +2,7 @@ import type { Idea } from "@prisma/client";
 import { isSearchEvidence, type SearchEvidence } from "./autocomplete/evidence";
 import type { IdeaTypeCode } from "./autocomplete/copy";
 import type { IdeaRequirements } from "./founder-fit";
+import { checklistFromIdeaFields, readFocusChecklist, type FocusChecklist } from "./focus";
 
 export type Facet = { value: number; label: string; why: string; sourceIds: number[] };
 export type IdeaSource = {
@@ -75,6 +76,7 @@ export type IdeaView = {
   timing: number;
   growth: number;
   buildBrief: unknown;
+  focus: FocusChecklist;
 };
 
 function arr<T>(value: unknown): T[] {
@@ -126,6 +128,17 @@ export function toIdeaView(idea: Idea): IdeaView {
     timing: idea.timing,
     growth: idea.growth,
     buildBrief: idea.buildBrief,
+    focus:
+      readFocusChecklist(idea.focusChecklist) ??
+      checklistFromIdeaFields({
+        title: idea.title,
+        summary: idea.summary,
+        target: businessFit.target,
+        offerDetail: arr<{ detail?: string }>(idea.offerLadder)[0]?.detail,
+        price: arr<{ price?: string }>(idea.offerLadder)[0]?.price,
+        channel: community.channels?.[0]?.name,
+        executionPlan: idea.executionPlan,
+      }),
   };
 }
 

@@ -1,4 +1,5 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
+import { checklistFromIdeaFields } from "../focus";
 import { positionLabel } from "../frameworks";
 import type { BuiltIdea } from "../pipeline/write";
 import { computeScores, executionDifficulty, scoreLabel, type CapitalBand, type ScoreInputs } from "../scoring";
@@ -224,6 +225,27 @@ export function queuedIdeaData(idea: BuiltIdea): Prisma.IdeaCreateInput {
     buildability: idea.buildability,
     timing: idea.timing,
     growth: idea.growth,
+    ...focusFields(idea),
+  };
+}
+
+function focusFields(idea: BuiltIdea): { focusScore: number; focusVerdict: string; focusChecklist: Prisma.InputJsonValue } {
+  const fit = idea.businessFit as { target?: string };
+  const community = idea.community as { channels?: { name?: string }[] };
+  const offer = idea.offerLadder[0];
+  const checklist = checklistFromIdeaFields({
+    title: idea.title,
+    summary: idea.summary,
+    target: fit.target,
+    offerDetail: offer?.detail,
+    price: offer?.price,
+    channel: community.channels?.[0]?.name,
+    executionPlan: idea.executionPlan,
+  });
+  return {
+    focusScore: checklist.passedCount,
+    focusVerdict: checklist.verdict,
+    focusChecklist: checklist as unknown as Prisma.InputJsonValue,
   };
 }
 
