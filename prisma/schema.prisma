@@ -1,0 +1,409 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [pgvector(map: "vector")]
+}
+
+enum Plan {
+  FREE
+  BUILDER
+  PRO
+}
+
+enum BillingInterval {
+  NONE
+  MONTHLY
+  ANNUAL
+}
+
+enum IdeaStatus {
+  CANDIDATE
+  QUEUED
+  APPROVED
+  PUBLISHED
+  REJECTED
+}
+
+enum DataMode {
+  SAMPLE
+  LIVE
+}
+
+enum MarketType {
+  B2B
+  B2C
+  BOTH
+}
+
+enum IdeaType {
+  SAAS
+  APP
+  DIGITAL
+}
+
+model User {
+  id                   String          @id @default(cuid())
+  email                String          @unique
+  name                 String?
+  passwordHash         String
+  plan                 Plan            @default(FREE)
+  billingInterval      BillingInterval @default(NONE)
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  founderProfile       Json?
+  emailOptIn           Boolean         @default(true)
+  isAdmin              Boolean         @default(false)
+  communityReleaseOptOut Boolean       @default(false)
+  emailToken           String?
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  sessions             Session[]
+  savedIdeas           SavedIdea[]
+  reports              ResearchReport[]
+  projects             Project[]
+  chats                AdvisorMessage[]
+  usage                UsageLedger[]
+  gallery              GalleryItem[]
+  trendQueries         TrendQuery[]
+  generated            GeneratedIdea[]
+  autocompleteMines    AutocompleteMine[]
+  focusDrafts          FocusDraft[]
+
+  @@index([emailToken])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model Idea {
+  id             String     @id @default(cuid())
+  slug           String     @unique
+  title          String
+  summary        String
+  status         IdeaStatus @default(CANDIDATE)
+  publishedAt    DateTime?
+  dataMode       DataMode   @default(SAMPLE)
+  tags           Json
+  pitch          String     @db.Text
+  keyword        String
+  keywordVolume  Int
+  keywordGrowth  Float
+  keywordCountry String     @default("US")
+  keywordSeries  Json
+  keywordAsOf    String
+  keywordSource  String
+  scores         Json
+  businessFit    Json
+  community      Json
+  offerLadder    Json
+  whyNow         String     @db.Text
+  proof          String     @db.Text
+  marketGap      String     @db.Text
+  executionPlan  String     @db.Text
+  frameworks     Json
+  requirements   Json
+  sources        Json
+  buildBrief     Json
+  category       String
+  market         MarketType
+  ideaType       IdeaType   @default(SAAS)
+  searchEvidence Json?
+  difficulty     Int
+  capitalBand    String
+  opportunity    Int
+  pain           Int
+  buildability   Int
+  timing         Int
+  growth         Float
+  focusScore     Int        @default(0)
+  focusVerdict   String     @default("needs-work")
+  focusChecklist Json?
+  embedding      Unsupported("vector(1536)")?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  gallery        GalleryItem[]
+  projects       Project[]
+  savedBy        SavedIdea[]
+  chats          AdvisorMessage[]
+  letters        NewsletterIssue[]
+
+  @@index([status, publishedAt])
+  @@index([category])
+  @@index([market])
+  @@index([ideaType])
+  @@index([focusScore])
+}
+
+model Trend {
+  id          String   @id @default(cuid())
+  keyword     String
+  country     String
+  category    String
+  volume      Int?
+  growthPct   Float?
+  series      Json
+  explainer   String   @db.Text
+  sourceLabel String
+  sourceUrl   String
+  asOf        String
+  dataMode    DataMode @default(SAMPLE)
+  commercial  Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@unique([keyword, country])
+  @@index([country, commercial])
+}
+
+model Insight {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  audience  String
+  persona   String   @db.Text
+  pains     Json
+  phrases   Json
+  badges    Json
+  dataMode  DataMode @default(SAMPLE)
+  country   String   @default("US")
+  createdAt DateTime @default(now())
+}
+
+model ResearchReport {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title      String
+  input      Json
+  status     String
+  progress   Json
+  report     Json?
+  verdict    String?
+  confidence Int?
+  dataMode   DataMode @default(SAMPLE)
+  projectId  String?
+  releasedAt DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([releasedAt, createdAt])
+}
+
+model Project {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ideaId    String?
+  idea      Idea?            @relation(fields: [ideaId], references: [id])
+  title     String
+  context   Json
+  outputs   Json
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  chats     AdvisorMessage[]
+}
+
+model GalleryItem {
+  id        String   @id @default(cuid())
+  ideaId    String?
+  idea      Idea?    @relation(fields: [ideaId], references: [id])
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  tool      String
+  title     String
+  url       String
+  blurb     String
+  makerName String
+  status    String   @default("pending")
+  dataMode  DataMode @default(SAMPLE)
+  createdAt DateTime @default(now())
+}
+
+model SavedIdea {
+  userId    String
+  ideaId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  idea      Idea     @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([userId, ideaId])
+}
+
+model AdvisorMessage {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ideaId    String?
+  idea      Idea?    @relation(fields: [ideaId], references: [id])
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id])
+  reportId  String?
+  mode      String
+  role      String
+  content   String   @db.Text
+  dataMode  DataMode @default(SAMPLE)
+  createdAt DateTime @default(now())
+}
+
+model UsageLedger {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  period    String
+  kind      String
+  amount    Int      @default(1)
+  createdAt DateTime @default(now())
+
+  @@index([userId, period, kind])
+}
+
+model TrendQuery {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  seed      String
+  country   String
+  result     Json
+  dataMode   DataMode  @default(SAMPLE)
+  releasedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([releasedAt, createdAt])
+}
+
+model GeneratedIdea {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payload   Json
+  trendId   String?
+  createdAt DateTime @default(now())
+}
+
+model Subscriber {
+  id             String    @id @default(cuid())
+  email          String    @unique
+  token          String?
+  unsubscribedAt DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@index([token])
+}
+
+model NewsletterIssue {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  ideaId    String?
+  idea      Idea?    @relation(fields: [ideaId], references: [id], onDelete: SetNull)
+  subject   String
+  content   Json
+  dataMode  DataMode @default(SAMPLE)
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model FocusDraft {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title      String
+  facts      Json
+  checklist  Json
+  score      Int
+  dataMode   DataMode @default(SAMPLE)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId, updatedAt])
+}
+
+model AutocompleteSeed {
+  id        String    @id @default(cuid())
+  niche     String
+  country   String    @default("US")
+  language  String    @default("en")
+  active    Boolean   @default(true)
+  lastRunAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([niche, country])
+}
+
+model AutocompleteCache {
+  id           String   @id @default(cuid())
+  niche        String
+  country      String
+  language     String
+  suggestions  Json
+  groups       Json
+  source       String
+  dataMode     DataMode @default(SAMPLE)
+  drafts       Json     @default("{}")
+  fetchedAt    DateTime @default(now())
+
+  @@unique([niche, country, language])
+}
+
+model AutocompleteMine {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  niche     String
+  country   String
+  language  String
+  groups    Json
+  ideas     Json
+  source    String
+  dataMode  DataMode @default(SAMPLE)
+  cacheHit   Boolean   @default(false)
+  releasedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([userId, createdAt])
+  @@index([releasedAt, createdAt])
+}
+
+model AppSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+model ResearchCache {
+  id           String   @id @default(cuid())
+  cacheKey     String   @unique
+  country      String
+  competitors  Json
+  dataMode     DataMode @default(SAMPLE)
+  fetchedAt    DateTime @default(now())
+}
+
+model TrendCache {
+  id        String   @id @default(cuid())
+  cacheKey  String   @unique
+  seed      String
+  country   String
+  result    Json
+  dataMode  DataMode @default(SAMPLE)
+  fetchedAt DateTime @default(now())
+}
+
+model PipelineRun {
+  id        String   @id @default(cuid())
+  kind      String
+  status    String
+  log       Json
+  dataMode  DataMode @default(SAMPLE)
+  createdAt DateTime @default(now())
+}
